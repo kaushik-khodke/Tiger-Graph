@@ -1,0 +1,85 @@
+{
+  "case_id": "HHG-001",
+  "case": {
+    "status": "closed_legitimate",
+    "verdict": "legitimate",
+    "fraud_probability": 0.12,
+    "pattern": "none",
+    "pattern_description": "",
+    "affected_txn_ids": [],
+    "first_suspicious_txn_id": "",
+    "connected_card_ids": [],
+    "connected_device_profiles": [],
+    "exposure_usd": 0.0,
+    "evidence": [
+      {
+        "claim": "Flagged transaction 3514030 scored at 0.61 (Real-time model scored transaction 3514030 ($77.07, in billi...)",
+        "source": "graph",
+        "ref": "query:transaction_window(txn_id=3514030)",
+        "entity_ids": [
+          "3514030"
+        ]
+      },
+      {
+        "claim": "Card C12382-K1 associated with customer C12382 and verified account history",
+        "source": "graph",
+        "ref": "query:customer_summary(customer_id=C12382)",
+        "entity_ids": [
+          "C12382",
+          "C12382-K1"
+        ]
+      },
+      {
+        "claim": "Verification response: Customer confirmed they made the purchase.",
+        "source": "customer",
+        "ref": "evidence_request:1",
+        "entity_ids": [
+          "C12382"
+        ]
+      }
+    ],
+    "similar_prior_cases": [
+      "CC-0003",
+      "CC-0009"
+    ],
+    "summary": "Case HHG-001: Real-time model scored transaction 3514030 ($77.07, in billing region 444.0) at 0.61. Review and decide.. Customer verification concluded legitimate. Applied policy rules.",
+    "written_to_graph": true,
+    "graph_case_id": "CASE-TG-HHG-001"
+  },
+  "evidence_requests": [
+    {
+      "type": "customer_validation",
+      "asked_after_step": 3,
+      "assumed_response": "Customer confirmed they made the purchase."
+    }
+  ],
+  "next_best_actions": {
+    "initial": [
+      {
+        "action": "VERIFY_WITH_CUSTOMER",
+        "route": "auto",
+        "reason": "R1: verify before blocking on weak/single signal where assessed fraud probability < 0.70"
+      }
+    ],
+    "final": [
+      {
+        "action": "CLOSE_NO_FRAUD",
+        "route": "auto",
+        "reason": "R3: customer confirmed legitimate transaction; close alert with no fraud"
+      }
+    ],
+    "what_changed": "Customer verification (confirmed) shifted probability and updated recommended intervention."
+  },
+  "sar": {
+    "file": false,
+    "reason": "Policy R1/R3: Exposure below threshold or false alarm confirmed by cardholder",
+    "narrative": "",
+    "subjects": [],
+    "total_amount_usd": 0.0,
+    "activity_dates": []
+  },
+  "stop_reason": "Customer verification response settled the question and policy actions selected.",
+  "tool_calls": 7,
+  "tokens": 4250,
+  "latency_s": 0.42
+}
