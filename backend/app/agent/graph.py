@@ -138,6 +138,28 @@ class InvestigationAgentGraph:
         if on_event:
             on_event({"event": "investigation_started", "case_id": case_id, "status": state.status})
 
+        # Execute through compiled LangGraph StateGraph engine when possible
+        if self._compiled_graph:
+            try:
+                config = {"configurable": {"thread_id": case_id}}
+                out = self._compiled_graph.invoke(state, config=config)
+                if isinstance(out, dict):
+                    state = state.model_copy(update=out)
+                elif isinstance(out, InvestigationState):
+                    state = out
+                self._checkpoints[case_id] = state
+                if on_event:
+                    on_event({"event": "case_created", "case_id": case_id})
+                    on_event({"event": "graph_traversed", "case_id": case_id, "evidence_count": len(state.evidence)})
+                    on_event({"event": "uncertainty_evaluated", "case_id": case_id, "risk": state.risk_level, "confidence": state.confidence})
+                    if state.status == "AWAITING_APPROVAL":
+                        on_event({"event": "awaiting_approval", "case_id": case_id, "approval_id": state.approval_id, "role": state.required_role})
+                    else:
+                        on_event({"event": "investigation_completed", "case_id": case_id, "status": state.status})
+                return state
+            except Exception as exc:
+                logger.info(f"LangGraph execution using resilient stage runner: {exc}")
+
         # Step 1-6: Initial traversal & uncertainty
         res1 = trigger_case(state)
         state = state.model_copy(update=res1)
