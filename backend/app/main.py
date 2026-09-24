@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
@@ -9,10 +10,19 @@ from .api.routes import (
     benchmark, health, mock_external
 )
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("[Sentinel AI Backend] Initializing data services...")
+    data_service.load_cases()
+    memory_service.load_cases()
+    print("[Sentinel AI Backend] Ready on port", settings.API_PORT)
+    yield
+
 app = FastAPI(
     title=settings.APP_NAME,
     description="Sentinel AI — Agentic Fraud Investigation & Next-Best-Action Platform Backend",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Configure CORS for Next.js frontend
@@ -42,13 +52,6 @@ app.include_router(benchmark.router, prefix="/api")
 app.include_router(mock_external.router, prefix="/api")
 app.include_router(health.router, prefix="/health")
 app.include_router(health.router, prefix="/api/health")
-
-@app.on_event("startup")
-def startup_event():
-    print("[Sentinel AI Backend] Initializing data services...")
-    data_service.load_cases()
-    memory_service.load_cases()
-    print("[Sentinel AI Backend] Ready on port", settings.API_PORT)
 
 @app.get("/")
 def root():
