@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from ..schemas.case import NextBestAction
 
 class PolicyEngine:
@@ -98,12 +98,13 @@ class PolicyEngine:
         self, 
         customer_response: str, # "denied" | "confirmed" | "timeout"
         exposure_usd: float,
-        has_shared_origin: bool,
-        pattern: str,
-        connected_cards: List[str]
+        has_shared_origin: bool = False,
+        pattern: str = "none",
+        connected_cards: Optional[List[str]] = None
     ) -> List[NextBestAction]:
-        """Rules R2, R3, R4, R6, R9."""
+        """Rules R2, R3, R4, R6, R9, R10."""
         actions: List[NextBestAction] = []
+        connected_cards = connected_cards or []
         
         if customer_response == "confirmed":
             route, role = self.determine_route("CLOSE_NO_FRAUD", exposure_usd)
@@ -117,16 +118,27 @@ class PolicyEngine:
             return actions
 
         if customer_response == "denied":
-            route_block, role_block = self.determine_route("BLOCK_CARD", exposure_usd)
+            # R10: If multiple cards under this customer or connected cards confirmed compromised
+            if has_shared_origin and len(connected_cards) >= 2:
+                route_all, role_all = self.determine_route("BLOCK_ALL_CARDS", exposure_usd)
+                actions.append(NextBestAction(
+                    action="BLOCK_ALL_CARDS",
+                    route=route_all,
+                    reason=f"R10: multiple compromised cards ({len(connected_cards)}) detected under shared account or ring",
+                    policy_reference="Policy R10",
+                    required_role=role_all
+                ))
+            else:
+                route_block, role_block = self.determine_route("BLOCK_CARD", exposure_usd)
+                actions.append(NextBestAction(
+                    action="BLOCK_CARD",
+                    route=route_block,
+                    reason=f"R2: customer denied transaction; block card and reissue (exposure: ${exposure_usd:,.2f})",
+                    policy_reference="Policy R2",
+                    required_role=role_block
+                ))
+
             route_case, role_case = self.determine_route("CREATE_CASE", exposure_usd)
-            
-            actions.append(NextBestAction(
-                action="BLOCK_CARD",
-                route=route_block,
-                reason=f"R2: customer denied transaction; block card and reissue (exposure: ${exposure_usd:,.2f})",
-                policy_reference="Policy R2",
-                required_role=role_block
-            ))
             actions.append(NextBestAction(
                 action="CREATE_CASE",
                 route=route_case,
