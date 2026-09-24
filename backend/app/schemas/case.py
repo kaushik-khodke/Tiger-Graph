@@ -23,6 +23,11 @@ class CaseMetrics(BaseModel):
     escalations: int
     resolved_today: int
     total_cases: int
+    active_change: str = "+0%"
+    awaiting_change: str = "Awaiting reply"
+    pending_change: str = "In review"
+    escalations_change: str = "Active"
+    resolved_change: str = "Today"
 
 class UncertaintyAssessment(BaseModel):
     risk_score: int
@@ -49,6 +54,7 @@ class RecommendationSnapshot(BaseModel):
     approval_required: bool
     required_role: str
     policy_rule: str
+    reasons: List[str] = []
 
 class CaseDetail(BaseModel):
     id: str
