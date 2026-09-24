@@ -18,6 +18,8 @@ import {
   BenchmarkSummary
 } from '@/types/sentinel'
 import { Button } from '@/components/ui/button'
+import { LanguageSelector } from '@/components/language-selector'
+import { initGoogleTranslate, setGoogleTranslateLanguage } from '@/lib/translations'
 
 const icon = (name: string, props: any = {}) => {
   const I = (Icons as any)[name] || Icons.Circle
@@ -148,7 +150,9 @@ function Header({
   onToggleSidebar,
   sidebarCollapsed,
   theme,
-  onToggleTheme
+  onToggleTheme,
+  lang,
+  onSelectLang
 }: {
   onSearch: (v: string) => void
   systemStatus: string
@@ -156,6 +160,8 @@ function Header({
   sidebarCollapsed: boolean
   theme: 'light' | 'dark'
   onToggleTheme: () => void
+  lang: string
+  onSelectLang: (lang: string) => void
 }) {
   return (
     <header className="topbar">
@@ -169,6 +175,7 @@ function Header({
         <kbd>⌘ K</kbd>
       </div>
       <div className="top-actions">
+        <LanguageSelector currentLang={lang} onSelectLang={onSelectLang} />
         <button
           type="button"
           className="theme-toggle-btn"
@@ -267,12 +274,12 @@ function InvestigationTable({ cases, compact = false }: { cases: CaseListItem[];
           {displayCases.map((row) => (
             <tr key={row.id} onClick={() => router.push('/investigations/' + row.id)}>
               <td>
-                <strong>{row.id}</strong>
-                <small>{row.transaction}</small>
+                <strong className="notranslate" translate="no">{row.id}</strong>
+                <small className="notranslate" translate="no">{row.transaction}</small>
               </td>
               <td>{row.trigger}</td>
-              <td>{row.customer}</td>
-              <td>${row.amount.toFixed(2)}</td>
+              <td className="notranslate" translate="no">{row.customer}</td>
+              <td className="notranslate" translate="no">${row.amount.toFixed(2)}</td>
               <td>
                 <span className={`risk risk-${row.risk > 85 ? 'high' : row.risk > 70 ? 'med' : 'low'}`}>
                   {row.risk}
@@ -362,7 +369,7 @@ function Dashboard({ cases, metrics, auditEvents }: { cases: CaseListItem[]; met
                   </span>
                   <div>
                     <strong>{x.tool_action}</strong>
-                    <small>{x.case_id} · {x.result} · {x.timestamp}</small>
+                    <small><span className="notranslate" translate="no">{x.case_id}</span> · {x.result} · <span className="notranslate" translate="no">{x.timestamp}</span></small>
                   </div>
                 </div>
               )
@@ -385,7 +392,7 @@ function Dashboard({ cases, metrics, auditEvents }: { cases: CaseListItem[]; met
                 <Badge tone={c.risk > 85 ? 'red' : 'amber'}>Risk {c.risk}</Badge>
                 <span>{c.updated}</span>
               </div>
-              <strong>{c.id}</strong>
+              <strong className="notranslate" translate="no">{c.id}</strong>
               <p>{c.trigger}</p>
               <div className="case-meta">
                 <span>{icon('FileText')} {c.evidence} evidence</span>
@@ -694,16 +701,16 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
                     </Badge>
                   </div>
                   <div className="dossier-body">
-                    <h3>{c.id}</h3>
+                    <h3 className="notranslate" translate="no">{c.id}</h3>
                     <p>Trigger: {c.trigger}</p>
                     <div className="dossier-metrics">
                       <div>
                         <span>Customer</span>
-                        <strong>{c.customer}</strong>
+                        <strong className="notranslate" translate="no">{c.customer}</strong>
                       </div>
                       <div>
                         <span>Exposure</span>
-                        <strong style={{ color: 'var(--amber)' }}>${c.amount.toFixed(2)}</strong>
+                        <strong style={{ color: 'var(--amber)' }} className="notranslate" translate="no">${c.amount.toFixed(2)}</strong>
                       </div>
                       <div>
                         <span>Evidence Nodes</span>
@@ -767,10 +774,10 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
               <tbody>
                 {filteredCases.map((c) => (
                   <tr key={c.id} onClick={() => router.push('/investigations/' + c.id)}>
-                    <td><strong>{c.id}</strong><small>{c.updated}</small></td>
+                    <td><strong className="notranslate" translate="no">{c.id}</strong><small>{c.updated}</small></td>
                     <td><span className="dossier-typology">{getCaseTypology(c)}</span></td>
-                    <td>{c.customer}</td>
-                    <td><strong>${c.amount.toFixed(2)}</strong></td>
+                    <td className="notranslate" translate="no">{c.customer}</td>
+                    <td><strong className="notranslate" translate="no">${c.amount.toFixed(2)}</strong></td>
                     <td><span className={`risk ${c.risk >= 75 ? 'risk-high' : c.risk >= 60 ? 'risk-med' : 'risk-low'}`}>{c.risk}</span></td>
                     <td>{c.confidence}%</td>
                     <td>{c.evidence} items</td>
@@ -811,9 +818,9 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
             <p>Suspicious Activity Report auto-grounded by TigerGraph multi-hop evidence and LangGraph agent reasoning.</p>
 
             <div className="approval-summary">
-              <div>Case Identifier: <strong>{selectedSarCase.id}</strong></div>
-              <div>Subject Identity: <strong>{selectedSarCase.customer}</strong></div>
-              <div>Financial Exposure: <strong>${selectedSarCase.amount.toFixed(2)} USD</strong></div>
+              <div>Case Identifier: <strong className="notranslate" translate="no">{selectedSarCase.id}</strong></div>
+              <div>Subject Identity: <strong className="notranslate" translate="no">{selectedSarCase.customer}</strong></div>
+              <div>Financial Exposure: <strong className="notranslate" translate="no">${selectedSarCase.amount.toFixed(2)} USD</strong></div>
               <div>Suspected Typology: <strong>{getCaseTypology(selectedSarCase)}</strong></div>
               <div>Risk Classification: <strong>Score {selectedSarCase.risk}/100 ({selectedSarCase.risk >= 75 ? 'Critical SAR Threshold' : 'Elevated Risk'})</strong></div>
             </div>
@@ -948,7 +955,7 @@ function Graph({
                   : 'BriefcaseBusiness'
               )}
             </span>
-            <strong>{n.sub}</strong>
+            <strong className="notranslate" translate="no">{n.sub}</strong>
             <small>{n.label}</small>
           </button>
         ))}
@@ -986,7 +993,7 @@ function EvidenceCard({
         <Badge tone={e.tone === 'support' ? 'green' : e.tone === 'contradict' ? 'red' : 'slate'}>
           {e.tone === 'support' ? 'Supporting' : e.tone === 'contradict' ? 'Contradicting' : 'Contextual'}
         </Badge>
-        <span>{e.id}</span>
+        <span className="notranslate" translate="no">{e.id}</span>
       </div>
       <strong>{e.title}</strong>
       <p>{e.description}</p>
@@ -1090,17 +1097,17 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
         <div>
           <div className="eyebrow">INVESTIGATION WORKSPACE</div>
           <h1>
-            {caseDetail.id}{' '}
+            <span className="notranslate" translate="no">{caseDetail.id}</span>{' '}
             <Badge tone={isAwaitingApproval ? 'amber' : requested ? 'red' : 'blue'}>
               {caseDetail.status.replace('_', ' ').toLowerCase()}
             </Badge>
           </h1>
           <div className="case-summary">
             <span>Trigger <strong>{toTitleCase(caseDetail.trigger_type)}</strong></span>
-            <span>Customer <strong>{caseDetail.customer_id}</strong></span>
-            <span>Transaction <strong>{caseDetail.flagged_txn_id}</strong></span>
-            <span>Amount <strong>${caseDetail.amount.toFixed(2)}</strong></span>
-            <span>Opened <strong>{caseDetail.opened_at}</strong></span>
+            <span>Customer <strong className="notranslate" translate="no">{caseDetail.customer_id}</strong></span>
+            <span>Transaction <strong className="notranslate" translate="no">{caseDetail.flagged_txn_id}</strong></span>
+            <span>Amount <strong className="notranslate" translate="no">${caseDetail.amount.toFixed(2)}</strong></span>
+            <span>Opened <strong className="notranslate" translate="no">{caseDetail.opened_at}</strong></span>
           </div>
         </div>
         <div className="case-actions">
@@ -1425,13 +1432,13 @@ function ApprovalsPage() {
             <tbody>
               {approvals.map((a) => (
                 <tr key={a.id}>
-                  <td><strong>{a.id}</strong><small>{a.created_at}</small></td>
-                  <td><strong>{a.case_id}</strong></td>
+                  <td><strong className="notranslate" translate="no">{a.id}</strong><small className="notranslate" translate="no">{a.created_at}</small></td>
+                  <td><strong className="notranslate" translate="no">{a.case_id}</strong></td>
                   <td><Badge tone="violet">{a.action}</Badge></td>
                   <td><Badge tone={a.route === 'L2' ? 'red' : 'amber'}>{a.route}</Badge></td>
                   <td><span className="risk risk-high">{a.risk}</span></td>
                   <td>{a.confidence}%</td>
-                  <td>${a.exposure_usd.toFixed(2)}</td>
+                  <td className="notranslate" translate="no">${a.exposure_usd.toFixed(2)}</td>
                   <td>
                     <Badge tone={a.status === 'APPROVED' ? 'green' : a.status === 'REJECTED' ? 'red' : 'amber'}>
                       {a.status}
@@ -1554,7 +1561,7 @@ function MemoryPage({ cases = [] }: { cases?: CaseListItem[] }) {
               <Badge tone="violet">Historical context</Badge>
               <strong>{c.similarity}% match</strong>
             </div>
-            <h3>{c.id}</h3>
+            <h3 className="notranslate" translate="no">{c.id}</h3>
             <p>{c.analyst_notes}</p>
             <Badge tone={c.outcome === 'Cleared' ? 'green' : 'red'}>
               {c.outcome}
@@ -1566,7 +1573,7 @@ function MemoryPage({ cases = [] }: { cases?: CaseListItem[] }) {
               ))}
             </div>
             <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '12px' }}>
-              Historical exposure: <strong>${c.exposure_usd.toFixed(2)}</strong>
+              Historical exposure: <strong className="notranslate" translate="no">${c.exposure_usd.toFixed(2)}</strong>
             </div>
             <Button variant="outline" size="sm">
               Review case context {icon('ArrowUpRight')}
@@ -1616,8 +1623,8 @@ function AuditPage() {
             <tbody>
               {events.map((r, i) => (
                 <tr key={r.timestamp + i}>
-                  <td><strong>{r.timestamp}</strong></td>
-                  <td><strong>{r.case_id}</strong></td>
+                  <td className="notranslate" translate="no"><strong>{r.timestamp}</strong></td>
+                  <td className="notranslate" translate="no"><strong>{r.case_id}</strong></td>
                   <td><Badge tone={r.actor === 'Agent' ? 'violet' : r.actor === 'Supervisor' ? 'amber' : 'slate'}>{r.actor}</Badge></td>
                   <td>{r.event}</td>
                   <td>{r.tool_action}</td>
@@ -1760,11 +1767,11 @@ function BenchmarkPage() {
             <tbody>
               {cases.map((c) => (
                 <tr key={c.case_id}>
-                  <td><strong>{c.case_id}</strong><small>{c.opened_at}</small></td>
+                  <td><strong className="notranslate" translate="no">{c.case_id}</strong><small className="notranslate" translate="no">{c.opened_at}</small></td>
                   <td>{c.trigger_type}</td>
-                  <td>{c.flagged_txn_id}</td>
-                  <td>{c.card_id}</td>
-                  <td>${c.amount.toFixed(2)}</td>
+                  <td className="notranslate" translate="no">{c.flagged_txn_id}</td>
+                  <td className="notranslate" translate="no">{c.card_id}</td>
+                  <td className="notranslate" translate="no">${c.amount.toFixed(2)}</td>
                   <td>
                     {c.verdict ? (
                       <Badge tone={c.verdict === 'fraud' ? 'red' : c.verdict === 'legitimate' ? 'green' : 'amber'}>
@@ -1858,16 +1865,16 @@ function SettingsPage() {
         <div className="panel" style={{ padding: '20px' }}>
           <SectionTitle title="Backend Connection" />
           <p>FastAPI connection status: <Badge tone="green">{health?.status ? toTitleCase(health.status) : 'Online'}</Badge></p>
-          <p>Environment: <strong>{health?.environment ? toTitleCase(health.environment) : 'Development'} (Port {health?.port || 8001})</strong></p>
+          <p>Environment: <strong className="notranslate" translate="no">{health?.environment ? toTitleCase(health.environment) : 'Development'} (Port {health?.port || 8001})</strong></p>
           <p>Workflow Engine: <strong>{health?.workflow || '10-Stage Decision State Machine'}</strong></p>
-          <p>API Base URL: <strong>{process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001'}</strong></p>
+          <p>API Base URL: <strong className="notranslate" translate="no">{process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001'}</strong></p>
         </div>
 
         <div className="panel" style={{ padding: '20px' }}>
           <SectionTitle title="TigerGraph &amp; MCP Integration" />
           <p>Graph Storage: <Badge tone="green">{health?.tigergraph ? toTitleCase(health.tigergraph) : 'Connected'}</Badge></p>
-          <p>Target Graph: <strong>{health?.tigergraph_graph || 'FraudGraph'} ({health?.tigergraph_host || 'http://localhost:9000'})</strong></p>
-          <p>Entities Indexed: <strong>{health?.entities_indexed ? health.entities_indexed.toLocaleString() : '735,174'} (IEEE-CIS Dataset)</strong></p>
+          <p>Target Graph: <strong className="notranslate" translate="no">{health?.tigergraph_graph || 'FraudGraph'} ({health?.tigergraph_host || 'http://localhost:9000'})</strong></p>
+          <p>Entities Indexed: <strong className="notranslate" translate="no">{health?.entities_indexed ? health.entities_indexed.toLocaleString() : '735,174'} (IEEE-CIS Dataset)</strong></p>
           <p>MCP Investigation Tools: <strong>{health?.mcp_tools_count || 5} Logical Tools Active</strong></p>
         </div>
       </div>
@@ -1885,6 +1892,7 @@ export default function SentinelApp() {
   const [auditEvents, setAuditEvents] = useState<AuditLogItem[]>([])
   const [systemStatus, setSystemStatus] = useState('TigerGraph · Connected')
   const [graphCaseId, setGraphCaseId] = useState('CASE-10293')
+  const [lang, setLang] = useState<string>('en')
 
   // Theme initialization from localStorage (defaults to light mode)
   useEffect(() => {
@@ -1893,6 +1901,22 @@ export default function SentinelApp() {
     setTheme(initialTheme)
     document.documentElement.setAttribute('data-theme', initialTheme)
   }, [])
+
+  // Language initialization from localStorage + Google Translate
+  useEffect(() => {
+    const savedLang = localStorage.getItem('sentinel_lang') || 'en'
+    setLang(savedLang)
+    initGoogleTranslate()
+    if (savedLang !== 'en') {
+      setGoogleTranslateLanguage(savedLang)
+    }
+  }, [])
+
+  const handleSelectLang = (newLang: string) => {
+    setLang(newLang)
+    localStorage.setItem('sentinel_lang', newLang)
+    setGoogleTranslateLanguage(newLang)
+  }
 
   const handleToggleTheme = () => {
     const nextTheme = theme === 'light' ? 'dark' : 'light'
@@ -1937,6 +1961,7 @@ export default function SentinelApp() {
 
   return (
     <div className="app-shell">
+      <div id="google_translate_element" style={{ display: 'none' }} />
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} metrics={metrics} />
       <div className="main-shell">
         <Header
@@ -1946,6 +1971,8 @@ export default function SentinelApp() {
           sidebarCollapsed={collapsed}
           theme={theme}
           onToggleTheme={handleToggleTheme}
+          lang={lang}
+          onSelectLang={handleSelectLang}
         />
         <main className="main-content">
           {isDashboard && <Dashboard cases={cases} metrics={metrics} auditEvents={auditEvents} />}
