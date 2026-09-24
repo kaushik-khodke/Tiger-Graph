@@ -1,8 +1,7 @@
 {
-  "name": "my-project",
-  "version": "0.1.0",
+  "name": "sentinel-ai-frontend",
+  "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@12.3.4",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

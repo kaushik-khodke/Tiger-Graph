@@ -13,40 +13,39 @@
     "exposure_usd": 0.0,
     "evidence": [
       {
-        "claim": "[SUPPORTING EVIDENCE] Customer C-123 and C-811 both authenticated via Device D-77.",
+        "claim": "[SUPPORTING EVIDENCE] Authentication footprint recorded on DEV-3514030 for customer C12382.",
         "source": "graph",
         "ref": "claim:E-004",
         "entity_ids": [
-          "C-123",
-          "D-77",
-          "C-811"
+          "C12382",
+          "DEV-3514030"
         ]
       },
       {
-        "claim": "[CONTEXTUAL EVIDENCE] Device registration at 09:42 followed by online checkout at 10:01 (19 min).",
+        "claim": "[CONTEXTUAL EVIDENCE] Device registration followed by checkout on 3514030 within rapid window.",
         "source": "graph",
         "ref": "claim:E-007",
         "entity_ids": [
-          "D-77",
-          "TXN-10293"
+          "DEV-3514030",
+          "3514030"
         ]
       },
       {
-        "claim": "[SUPPORTING EVIDENCE] Device D-77 was previously recorded in confirmed card testing fraud CC-0141.",
+        "claim": "[SUPPORTING EVIDENCE] Device DEV-3514030 was associated with historical fraud cluster CC-0141 in graph index.",
         "source": "graph",
         "ref": "claim:E-012",
         "entity_ids": [
-          "D-77",
+          "DEV-3514030",
           "CC-0141"
         ]
       },
       {
-        "claim": "[CONTRADICTING EVIDENCE] Cardholder C-123 has 3-year tenure with established legitimate activity in billing region.",
+        "claim": "[CONTRADICTING EVIDENCE] Cardholder C12382 has multi-year account tenure and established legitimate baseline.",
         "source": "graph",
         "ref": "claim:E-015",
         "entity_ids": [
-          "C-123",
-          "US-West"
+          "C12382",
+          "C-123-K1"
         ]
       },
       {
@@ -102,5 +101,5 @@
   "stop_reason": "Customer verification response settled the question and policy actions selected.",
   "tool_calls": 7,
   "tokens": 4250,
-  "latency_s": 0.42
+  "latency_s": 0.45
 }
