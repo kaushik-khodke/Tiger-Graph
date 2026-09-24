@@ -50,75 +50,68 @@ class MemoryService:
 
     def find_similar(self, case_id: str, pattern: Optional[str] = None, customer_id: Optional[str] = None, limit: int = 4) -> List[Dict[str, Any]]:
         self.load_cases()
-        results: List[Dict[str, Any]] = []
+        from .data_service import data_service
+        c_detail = data_service._cases.get(case_id, {})
+        target_pattern = pattern or c_detail.get("pattern", "")
+        target_amt = float(c_detail.get("amount", 250.0))
+        target_cust = customer_id or c_detail.get("customer_id", "")
+        target_card = c_detail.get("card_id", "")
 
-        # If it's the golden case CASE-10293 or similar device cluster
-        if case_id in ("CASE-10293", "HHG-014", "HHG-017"):
-            results.append({
-                "id": "CC-0141",
-                "similarity": 91,
-                "outcome": "Confirmed Fraud",
-                "pattern": "card_testing",
-                "shared": ["Device profile (Samsung SM-G892A)", "Merchant cluster", "Temporal sequence"],
-                "analyst_notes": "Card testing: 3 small online authorizations under $3 followed by a $259 purchase. Shared device D-77.",
-                "exposure_usd": 268.43
-            })
-            results.append({
-                "id": "CC-2649",
-                "similarity": 78,
-                "outcome": "Confirmed Fraud",
-                "pattern": "undocumented",
-                "shared": ["Proxy syndicate", "Connected cards across customers"],
-                "analyst_notes": "Cross-card proxy ring using rotating anonymous IPs across multiple cardholders.",
-                "exposure_usd": 1420.50
-            })
-            results.append({
-                "id": "CC-0003",
-                "similarity": 68,
-                "outcome": "Cleared",
-                "pattern": "none",
-                "shared": ["High model risk score (0.91)", "Single high-value transaction"],
-                "analyst_notes": "Cardholder confirmed legitimate travel to billing region in question. Alert cleared.",
-                "exposure_usd": 0.00
-            })
-            return results[:limit]
-
-        # General search from loaded CSV
+        candidates = []
         for cid, row in self._cases.items():
             row_pattern = row.get("pattern", "")
+            row_cust = row.get("customer_id", "")
+            row_card = row.get("card_id", "")
             is_fraud = row.get("outcome") == "confirmed_fraud"
             outcome_display = "Confirmed Fraud" if is_fraud else "Cleared"
-            
-            # Simple matching score
-            score = 60
-            shared_tags = []
-            if pattern and row_pattern == pattern:
-                score += 25
-                shared_tags.append(f"Matching pattern ({pattern})")
-            if customer_id and row.get("customer_id") == customer_id:
-                score += 15
-                shared_tags.append("Same customer ID")
-            if not shared_tags:
-                shared_tags = ["Transaction amount profile", "Channel similarity"]
 
             try:
                 exp = float(row.get("exposure_usd", "0") or 0)
             except ValueError:
                 exp = 0.0
 
-            results.append({
+            # Compute multi-dimensional similarity score (40 - 95%)
+            score = 45
+            shared_tags = []
+
+            # 1. Pattern alignment
+            if target_pattern and row_pattern and target_pattern == row_pattern:
+                score += 25
+                shared_tags.append(f"Matching typology ({target_pattern.replace('_', ' ')})")
+
+            # 2. Entity overlap
+            if target_cust and row_cust and target_cust == row_cust:
+                score += 20
+                shared_tags.append(f"Customer relationship ({target_cust})")
+            elif target_card and row_card and target_card == row_card:
+                score += 20
+                shared_tags.append(f"Card profile match ({target_card})")
+
+            # 3. Exposure amount proximity
+            if target_amt > 0 and exp > 0:
+                diff_ratio = abs(target_amt - exp) / max(target_amt, exp)
+                if diff_ratio < 0.25:
+                    score += 15
+                    shared_tags.append(f"Similar exposure (${exp:.2f})")
+                elif diff_ratio < 0.60:
+                    score += 8
+
+            # Ensure baseline tags if none specific
+            if not shared_tags:
+                shared_tags = ["Transaction channel similarity", "Historical risk tier"]
+
+            candidates.append({
                 "id": cid,
                 "similarity": min(score, 95),
                 "outcome": outcome_display,
                 "pattern": row_pattern,
-                "shared": shared_tags,
-                "analyst_notes": row.get("analyst_notes", ""),
+                "shared": shared_tags[:3],
+                "analyst_notes": row.get("analyst_notes", f"Historical case record for {cid}"),
                 "exposure_usd": exp
             })
 
-            if len(results) >= limit:
-                break
-
-        return results
+        # Sort candidates descending by similarity score
+        candidates.sort(key=lambda x: x["similarity"], reverse=True)
+        return candidates[:limit]
 
 memory_service = MemoryService()
