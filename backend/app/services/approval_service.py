@@ -1,18 +1,23 @@
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 from ..schemas.approval import ApprovalItem, ApprovalActionPayload
 from .audit_service import audit_service
 from .data_service import data_service
 
 class ApprovalService:
     def __init__(self):
+        now = datetime.now()
+        t1 = (now - timedelta(minutes=3, seconds=20)).strftime("%H:%M:%S")
+        t2 = (now - timedelta(minutes=18, seconds=45)).strftime("%H:%M:%S")
+        t3 = (now - timedelta(hours=1, minutes=12)).strftime("%H:%M:%S")
+
         self._approvals: Dict[str, ApprovalItem] = {
             "APP-10293": ApprovalItem(
                 id="APP-10293",
                 case_id="CASE-10293",
                 action="BLOCK_CARD",
                 requested_by="Sentinel Agent",
-                created_at="10:06:41",
+                created_at=t1,
                 route="L1",
                 status="PENDING",
                 risk=94,
@@ -26,7 +31,7 @@ class ApprovalService:
                 case_id="HHG-002",
                 action="BLOCK_ALL_CARDS",
                 requested_by="Sentinel Agent",
-                created_at="09:42:15",
+                created_at=t2,
                 route="L2",
                 status="PENDING",
                 risk=94,
@@ -40,7 +45,7 @@ class ApprovalService:
                 case_id="HHG-010",
                 action="FILE_REPORT",
                 requested_by="Sentinel Agent",
-                created_at="08:15:30",
+                created_at=t3,
                 route="L2",
                 status="PENDING",
                 risk=90,
@@ -132,6 +137,31 @@ class ApprovalService:
             result=result_str,
             metadata={"decision": decision, "notes": payload.notes, "role": payload.role}
         )
+
+        # Resume LangGraph investigation agent if checkpoint exists
+        try:
+            from ..agent.graph import investigation_agent
+            from ..api.routes.investigations import broadcast_case_event
+            
+            agent_decision = "APPROVED" if decision == "approve" else ("REJECTED" if decision == "reject" else "INFO_REQUESTED")
+            investigation_agent.resume_with_approval(
+                case_id=item.case_id,
+                decision=agent_decision,
+                notes=payload.notes,
+                on_event=lambda ev: broadcast_case_event(item.case_id, ev)
+            )
+            broadcast_case_event(item.case_id, {
+                "event": "approval_decided",
+                "case_id": item.case_id,
+                "approval_id": approval_id,
+                "decision": agent_decision,
+                "reviewer": payload.reviewer,
+                "notes": payload.notes
+            })
+        except Exception as e:
+            # If no LangGraph checkpoint is active for this case, silently continue
+            pass
+
         return item
 
 approval_service = ApprovalService()

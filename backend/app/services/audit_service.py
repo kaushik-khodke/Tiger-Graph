@@ -1,12 +1,19 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from ..schemas.audit import AuditLogItem
 
 class AuditService:
     def __init__(self):
+        now = datetime.now()
+        t1 = (now - timedelta(minutes=1, seconds=15)).strftime("%H:%M:%S")
+        t2 = (now - timedelta(minutes=2, seconds=45)).strftime("%H:%M:%S")
+        t3 = (now - timedelta(minutes=4, seconds=20)).strftime("%H:%M:%S")
+        t4 = (now - timedelta(minutes=6, seconds=10)).strftime("%H:%M:%S")
+        t5 = (now - timedelta(minutes=8, seconds=30)).strftime("%H:%M:%S")
+
         self._events: List[AuditLogItem] = [
             AuditLogItem(
-                timestamp="10:07:14",
+                timestamp=t1,
                 case_id="CASE-10293",
                 actor="Agent",
                 event="Action",
@@ -15,7 +22,7 @@ class AuditService:
                 metadata={"rule": "POLICY-4.2"}
             ),
             AuditLogItem(
-                timestamp="10:06:41",
+                timestamp=t2,
                 case_id="CASE-10293",
                 actor="Supervisor",
                 event="Approval",
@@ -24,7 +31,7 @@ class AuditService:
                 metadata={"role": "Fraud Supervisor"}
             ),
             AuditLogItem(
-                timestamp="10:05:08",
+                timestamp=t3,
                 case_id="CASE-10293",
                 actor="Agent",
                 event="Evidence request",
@@ -33,7 +40,7 @@ class AuditService:
                 metadata={"action": "VERIFY_WITH_CUSTOMER"}
             ),
             AuditLogItem(
-                timestamp="10:04:19",
+                timestamp=t4,
                 case_id="CASE-10293",
                 actor="Agent",
                 event="Graph query",
@@ -42,7 +49,7 @@ class AuditService:
                 metadata={"prior_case": "CC-0141"}
             ),
             AuditLogItem(
-                timestamp="10:02:44",
+                timestamp=t5,
                 case_id="CASE-10293",
                 actor="Agent",
                 event="Policy check",

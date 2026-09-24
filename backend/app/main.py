@@ -6,7 +6,7 @@ from .services.memory_service import memory_service
 from .api.routes import (
     cases, investigations, evidence, graph,
     recommendations, approvals, memory, audit,
-    benchmark, health
+    benchmark, health, mock_external
 )
 
 app = FastAPI(
@@ -39,7 +39,9 @@ app.include_router(approvals.router, prefix="/api")
 app.include_router(memory.router, prefix="/api")
 app.include_router(audit.router, prefix="/api")
 app.include_router(benchmark.router, prefix="/api")
+app.include_router(mock_external.router, prefix="/api")
 app.include_router(health.router, prefix="/health")
+app.include_router(health.router, prefix="/api/health")
 
 @app.on_event("startup")
 def startup_event():

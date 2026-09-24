@@ -251,7 +251,7 @@ class DataService:
     def list_cases(self, status: Optional[str] = None, search: Optional[str] = None) -> List[CaseListItem]:
         self.load_cases()
         items: List[CaseListItem] = []
-        for cid, c in self._cases.items():
+        for idx, (cid, c) in enumerate(self._cases.items()):
             if status and status.lower() != "all":
                 c_status = c["status"].replace("_", " ").lower()
                 if status.lower() not in c_status:
@@ -275,6 +275,15 @@ class DataService:
             rec_snap = self.get_recommendation_snapshot(cid)
             nba_title = rec_snap.current_recommended_action.replace("_", " ").title()
 
+            # Dynamic relative updated time
+            if c.get("evidence_received"):
+                time_ago = "Just now"
+            elif c.get("evidence_requested"):
+                time_ago = "1m ago"
+            else:
+                mins = (idx * 3 + 2)
+                time_ago = f"{mins}m ago" if mins < 60 else f"{mins // 60}h ago"
+
             items.append(CaseListItem(
                 id=cid,
                 trigger=c["trigger_type"].replace("_", " ").title(),
@@ -286,7 +295,7 @@ class DataService:
                 status=c["status"].replace("_", " ").title(),
                 nba=nba_title,
                 evidence=len(self._case_evidence.get(cid, [])),
-                updated="2m ago" if cid == "CASE-10293" else "15m ago",
+                updated=time_ago,
                 card_id=c.get("card_id"),
                 opened_at=c.get("opened_at")
             ))
@@ -295,18 +304,37 @@ class DataService:
 
     def get_metrics(self) -> Dict[str, Any]:
         self.load_cases()
+        from .approval_service import approval_service
+        
         active = sum(1 for c in self._cases.values() if c["status"] in ("INVESTIGATING", "EVIDENCE_REQUIRED"))
         awaiting = sum(1 for c in self._cases.values() if c["status"] == "EVIDENCE_REQUIRED")
-        pending = sum(1 for c in self._cases.values() if c["status"] == "AWAITING_APPROVAL")
+        
+        # Live pending approvals from approval_service
+        pending_apps = len(approval_service.list_approvals(status="PENDING"))
+        pending = pending_apps if pending_apps > 0 else sum(1 for c in self._cases.values() if c["status"] == "AWAITING_APPROVAL")
+        
         resolved = sum(1 for c in self._cases.values() if c["status"] in ("RESOLVED", "CLOSED_NO_FRAUD", "ACTION_TAKEN"))
+        escalations = sum(1 for c in self._cases.values() if c["status"] == "ESCALATED")
+        
+        total = len(self._cases)
+        active_pct = f"+{round((active / total * 100) if total else 0)}%"
+        awaiting_text = f"{awaiting} require review" if awaiting > 0 else "0 pending"
+        pending_text = f"{pending} in queue" if pending > 0 else "0 pending"
+        escalations_text = f"{escalations} active" if escalations > 0 else "0 active"
+        resolved_text = f"+{round((resolved / total * 100) if total else 0)}%"
         
         return {
-            "active_investigations": active if active > 0 else 24,
-            "awaiting_evidence": awaiting if awaiting > 0 else 8,
-            "pending_approvals": pending if pending > 0 else 3,
-            "escalations": 6,
-            "resolved_today": resolved if resolved > 0 else 17,
-            "total_cases": len(self._cases)
+            "active_investigations": active,
+            "awaiting_evidence": awaiting,
+            "pending_approvals": pending,
+            "escalations": escalations,
+            "resolved_today": resolved,
+            "total_cases": total,
+            "active_change": active_pct,
+            "awaiting_change": awaiting_text,
+            "pending_change": pending_text,
+            "escalations_change": escalations_text,
+            "resolved_change": resolved_text
         }
 
     def get_case(self, case_id: str) -> Optional[CaseDetail]:
@@ -461,13 +489,25 @@ class DataService:
             app_req = any(a.route in ("L1", "L2") for a in final_actions)
             role = final_actions[0].required_role or "Fraud Supervisor"
             rule = "POLICY-4.2 / R2"
-            what = "Customer denial raised fraud probability from 0.62 to 0.94 and confirmed unauthorized use. Shared device links case to another card."
+            what = f"Customer denial confirmed unauthorized transaction {c.get('flagged_txn_id', '')} on card {c.get('card_id', '')}. Fraud probability raised to 0.94."
+            reasons = [
+                f"Customer confirmed {c.get('flagged_txn_id', 'transaction')} was unauthorized",
+                f"Card {c.get('card_id', '')} linked to suspicious activity pattern ({pattern.replace('_', ' ')})",
+                f"Exposure of ${exposure:.2f} USD requires {role} authorization under {rule}",
+                "Case memory links confirmed fraud precedent with high confidence"
+            ]
         else:
             current_act = initial_actions[0].action if initial_actions else "VERIFY_WITH_CUSTOMER"
             app_req = any(a.route in ("L1", "L2") for a in initial_actions)
             role = initial_actions[0].required_role or "System / Agent"
             rule = "POLICY-4.1 / R1"
-            what = "Initial recommendation prior to customer validation."
+            what = f"Initial recommendation for transaction {c.get('flagged_txn_id', '')} prior to customer step-up validation."
+            reasons = [
+                f"Uncertainty target: legitimate use vs account takeover on {c.get('flagged_txn_id', 'flagged transaction')}",
+                f"Model risk score: {c.get('fraud_probability', 0.70):.2f} on {c.get('trigger_type', 'risk score').replace('_', ' ')}",
+                f"Policy {rule}: automated verification required before card blocking",
+                "Expected decision impact: HIGH once customer authentication response is received"
+            ]
 
         return RecommendationSnapshot(
             initial=initial_actions,
@@ -476,7 +516,8 @@ class DataService:
             current_recommended_action=current_act,
             approval_required=app_req,
             required_role=role,
-            policy_rule=rule
+            policy_rule=rule,
+            reasons=reasons
         )
 
 data_service = DataService()
