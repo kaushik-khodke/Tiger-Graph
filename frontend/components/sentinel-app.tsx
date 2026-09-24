@@ -29,6 +29,16 @@ function toTitleCase(str?: string): string {
   return str.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+function getFormattedCurrentDate(): string {
+  const d = new Date()
+  return d.toLocaleDateString('en-US', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  }).toUpperCase()
+}
+
 function Badge({ children, tone = 'slate' }: { children: React.ReactNode; tone?: string }) {
   return <span className={`badge badge-${tone}`}>{children}</span>
 }
@@ -61,55 +71,91 @@ function Sidebar({ collapsed, setCollapsed, metrics }: { collapsed: boolean; set
     ['Settings', 'Settings2', '/settings'],
   ]
 
-  const activeCount = metrics ? String(metrics.active_investigations) : '24'
-  const approvalCount = metrics ? String(metrics.pending_approvals) : '3'
+  const activeCount = metrics ? String(metrics.active_investigations) : '—'
+  const approvalCount = metrics ? String(metrics.pending_approvals) : '—'
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="brand">
-        <div className="brand-mark">S</div>
-        {!collapsed && (
-          <div>
-            <strong>sentinel<span>ai</span></strong>
-            <small>FRAUD OPERATIONS</small>
-          </div>
+        {collapsed ? (
+          <button
+            type="button"
+            className="brand-mark-btn collapsed"
+            onClick={() => setCollapsed(false)}
+            title="Expand sidebar"
+            aria-label="Expand sidebar"
+          >
+            S
+          </button>
+        ) : (
+          <>
+            <div className="brand-left">
+              <button
+                type="button"
+                className="brand-mark-btn"
+                onClick={() => setCollapsed(true)}
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+              >
+                S
+              </button>
+              <div
+                className="brand-text"
+                onClick={() => setCollapsed(true)}
+                title="Collapse sidebar"
+                style={{ cursor: 'pointer' }}
+              >
+                <strong>sentinel<span>ai</span></strong>
+                <small>FRAUD OPERATIONS</small>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="sidebar-toggle-btn"
+              onClick={() => setCollapsed(true)}
+              title="Collapse sidebar"
+              aria-label="Collapse sidebar"
+            >
+              {icon('Menu')}
+            </button>
+          </>
         )}
       </div>
-      <button className="collapse" onClick={() => setCollapsed(!collapsed)} aria-label="Toggle sidebar">
-        {icon(collapsed ? 'PanelLeftOpen' : 'PanelLeftClose')}
-      </button>
       <nav>
         {navItems.map(([label, ico, href]) => (
           <button
             key={href}
+            type="button"
             className={`nav-item ${path === href || (href === '/dashboard' && path === '/') ? 'active' : ''}`}
             onClick={() => router.push(href)}
             title={collapsed ? label : undefined}
           >
-            {icon(ico)} {!collapsed && <span>{label}</span>}
-            {!collapsed && ['Investigations', 'Approvals'].includes(label) && (
-              <em>{label === 'Investigations' ? activeCount : approvalCount}</em>
+            <span className="nav-icon">{icon(ico)}</span>
+            <span className="nav-label">{label}</span>
+            {['Investigations', 'Approvals'].includes(label) && (
+              <em className="nav-badge">{label === 'Investigations' ? activeCount : approvalCount}</em>
             )}
           </button>
         ))}
       </nav>
-      {!collapsed && (
-        <div className="sidebar-foot">
-          <div className="demo-dot" />
-          <div>
-            <strong>Full Stack Mode</strong>
-            <small>FastAPI &amp; Graph Active</small>
-          </div>
-        </div>
-      )}
     </aside>
   )
 }
 
-function Header({ onSearch, systemStatus }: { onSearch: (v: string) => void; systemStatus: string }) {
+function Header({
+  onSearch,
+  systemStatus,
+  onToggleSidebar,
+  sidebarCollapsed
+}: {
+  onSearch: (v: string) => void
+  systemStatus: string
+  onToggleSidebar: () => void
+  sidebarCollapsed: boolean
+}) {
   return (
     <header className="topbar">
-      <div className="mobile-brand">
+      <div className="mobile-brand" onClick={onToggleSidebar} style={{ cursor: 'pointer' }}>
         <div className="brand-mark">S</div>
         <strong>sentinel<span>ai</span></strong>
       </div>
@@ -126,15 +172,6 @@ function Header({ onSearch, systemStatus }: { onSearch: (v: string) => void; sys
             <small>{systemStatus}</small>
           </div>
         </div>
-        <button className="icon-button" aria-label="Notifications">
-          {icon('Bell')}
-          <i />
-        </button>
-        <div className="avatar">AK</div>
-        <div className="analyst">
-          <strong>Alex Kim</strong>
-          <small>Senior Analyst</small>
-        </div>
       </div>
     </header>
   )
@@ -142,11 +179,36 @@ function Header({ onSearch, systemStatus }: { onSearch: (v: string) => void; sys
 
 function MetricCards({ metrics }: { metrics: CaseMetrics | null }) {
   const stats = [
-    { label: 'Active investigations', value: metrics ? String(metrics.active_investigations) : '24', change: '+8.4%', icon: 'Radar' },
-    { label: 'Awaiting evidence', value: metrics ? String(metrics.awaiting_evidence).padStart(2, '0') : '08', change: '3 urgent', icon: 'FileSearch' },
-    { label: 'Pending approvals', value: metrics ? String(metrics.pending_approvals).padStart(2, '0') : '03', change: 'Supervisor', icon: 'BadgeCheck' },
-    { label: 'Escalations', value: metrics ? String(metrics.escalations).padStart(2, '0') : '06', change: 'This week', icon: 'ArrowUpRight' },
-    { label: 'Resolved today', value: metrics ? String(metrics.resolved_today) : '17', change: '+12.1%', icon: 'CircleCheck' }
+    {
+      label: 'Active investigations',
+      value: metrics ? String(metrics.active_investigations) : '—',
+      change: metrics?.active_change || 'Live',
+      icon: 'Radar'
+    },
+    {
+      label: 'Awaiting evidence',
+      value: metrics ? String(metrics.awaiting_evidence).padStart(2, '0') : '—',
+      change: metrics?.awaiting_change || 'Pending response',
+      icon: 'FileSearch'
+    },
+    {
+      label: 'Pending approvals',
+      value: metrics ? String(metrics.pending_approvals).padStart(2, '0') : '—',
+      change: metrics?.pending_change || 'Queue clear',
+      icon: 'BadgeCheck'
+    },
+    {
+      label: 'Escalations',
+      value: metrics ? String(metrics.escalations).padStart(2, '0') : '—',
+      change: metrics?.escalations_change || 'None active',
+      icon: 'ArrowUpRight'
+    },
+    {
+      label: 'Resolved today',
+      value: metrics ? String(metrics.resolved_today) : '—',
+      change: metrics?.resolved_change || 'Cases closed',
+      icon: 'CircleCheck'
+    }
   ]
 
   return (
@@ -245,7 +307,7 @@ function Dashboard({ cases, metrics, auditEvents }: { cases: CaseListItem[]; met
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">OPERATIONS OVERVIEW · WED 23 SEP 2026</div>
+          <div className="eyebrow">OPERATIONS OVERVIEW · {getFormattedCurrentDate()}</div>
           <h1>Fraud Operations</h1>
           <p>AI-assisted investigation, evidence and next-best-action.</p>
         </div>
@@ -275,17 +337,21 @@ function Dashboard({ cases, metrics, auditEvents }: { cases: CaseListItem[]; met
             action={<span className="live"><i /> Live</span>}
           />
           <div className="activity-list">
-            {auditEvents.slice(0, 6).map((x, i) => (
-              <div className={`activity-row ${x.result === 'Warning' || x.event === 'Evidence deemed insufficient' ? 'warning' : ''}`} key={x.timestamp + i}>
-                <span>
-                  {i < 4 ? icon('Check') : icon('ArrowRight')}
-                </span>
-                <div>
-                  <strong>{x.tool_action}</strong>
-                  <small>{x.case_id} · {x.result} · {x.timestamp}</small>
+            {auditEvents.slice(0, 6).map((x, i) => {
+              const isSuccess = ['Executed', 'Approved', 'Allowed', 'Evidence found'].includes(x.result)
+              const isWarning = ['Warning', 'Waiting', 'Insufficient'].includes(x.result) || x.event.includes('insufficient')
+              return (
+                <div className={`activity-row ${isWarning ? 'warning' : ''}`} key={x.timestamp + i}>
+                  <span>
+                    {isSuccess ? icon('Check') : isWarning ? icon('AlertTriangle') : icon('ArrowRight')}
+                  </span>
+                  <div>
+                    <strong>{x.tool_action}</strong>
+                    <small>{x.case_id} · {x.result} · {x.timestamp}</small>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
             {auditEvents.length === 0 && (
               <div style={{ padding: '16px', color: 'var(--muted)', fontSize: '11px' }}>
                 Loading live agent activities...
@@ -321,7 +387,7 @@ function Dashboard({ cases, metrics, auditEvents }: { cases: CaseListItem[]; met
   )
 }
 
-function Queue({ cases }: { cases: CaseListItem[] }) {
+function Queue({ cases, metrics }: { cases: CaseListItem[]; metrics?: CaseMetrics | null }) {
   const router = useRouter()
   const [tab, setTab] = useState('All')
   const [search, setSearch] = useState('')
@@ -387,7 +453,9 @@ function Queue({ cases }: { cases: CaseListItem[] }) {
         {tabs.map((t) => (
           <button className={tab === t ? 'selected' : ''} key={t} onClick={() => setTab(t)}>
             {t}
-            {t === 'Awaiting Approval' && <b>3</b>}
+            {t === 'Awaiting Approval' && (metrics?.pending_approvals ?? 0) > 0 && <b>{metrics?.pending_approvals}</b>}
+            {t === 'Awaiting Evidence' && (metrics?.awaiting_evidence ?? 0) > 0 && <b>{metrics?.awaiting_evidence}</b>}
+            {t === 'Active' && (metrics?.active_investigations ?? 0) > 0 && <b>{metrics?.active_investigations}</b>}
           </button>
         ))}
       </div>
@@ -395,6 +463,389 @@ function Queue({ cases }: { cases: CaseListItem[] }) {
       <section className="panel">
         <InvestigationTable cases={filtered} />
       </section>
+    </>
+  )
+}
+
+function CasesPage({ cases, metrics }: { cases: CaseListItem[]; metrics?: CaseMetrics | null }) {
+  const router = useRouter()
+  const [search, setSearch] = useState('')
+  const [typologyFilter, setTypologyFilter] = useState('All Typologies')
+  const [statusFilter, setStatusFilter] = useState('All')
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
+  const [selectedSarCase, setSelectedSarCase] = useState<CaseListItem | null>(null)
+  const [copiedSar, setCopiedSar] = useState(false)
+
+  const typologies = [
+    'All Typologies',
+    'Account Takeover (ATO)',
+    'Syndicate Card Cycling',
+    'Device Farm Spoofing',
+    'Synthetic Identity',
+    'Velocity Spike'
+  ]
+
+  const getCaseTypology = (c: CaseListItem) => {
+    if (c.id === 'CASE-10293' || c.trigger.toLowerCase().includes('device')) return 'Account Takeover (ATO)'
+    if (c.trigger.toLowerCase().includes('report') || c.customer === 'C12382') return 'Syndicate Card Cycling'
+    if (c.risk > 75) return 'Device Farm Spoofing'
+    if (c.amount > 200) return 'Synthetic Identity'
+    return 'Velocity Spike'
+  }
+
+  const getSarStatus = (c: CaseListItem) => {
+    if (c.risk >= 75) return 'SAR Recommended'
+    if (c.status.toLowerCase().includes('approval')) return 'Under Compliance Review'
+    if (c.status.toLowerCase().includes('resolved')) return 'Case Closed'
+    return 'Active Dossier'
+  }
+
+  const filteredCases = useMemo(() => {
+    return cases.filter((c) => {
+      const typ = getCaseTypology(c)
+      const sar = getSarStatus(c)
+      if (typologyFilter !== 'All Typologies' && typ !== typologyFilter) return false
+      if (statusFilter !== 'All' && sar !== statusFilter) return false
+      if (search) {
+        const q = search.toLowerCase()
+        return (
+          c.id.toLowerCase().includes(q) ||
+          c.customer.toLowerCase().includes(q) ||
+          c.transaction.toLowerCase().includes(q) ||
+          typ.toLowerCase().includes(q)
+        )
+      }
+      return true
+    })
+  }, [cases, typologyFilter, statusFilter, search])
+
+  const totalExposure = useMemo(() => {
+    return cases.reduce((acc, c) => acc + (c.amount || 0), 0)
+  }, [cases])
+
+  const highRiskCount = useMemo(() => {
+    return cases.filter((c) => c.risk >= 75).length
+  }, [cases])
+
+  const handleCopySar = (c: CaseListItem) => {
+    const text = `FINCEN SUSPICIOUS ACTIVITY REPORT (SAR) DOSSIER
+CASE IDENTIFIER: ${c.id}
+PRIMARY SUBJECT: ${c.customer}
+TRANSACTION REFERENCE: ${c.transaction} ($${c.amount.toFixed(2)})
+PRIMARY SUSPECTED TYPOLOGY: ${getCaseTypology(c)}
+INVESTIGATION ENGINE: Sentinel AI LangGraph Multi-Hop Graph Traversal
+EVIDENCE CHAIN: ${c.evidence} Graph-Linked Artifacts
+FINDINGS: Autonomous multi-hop traversal on TigerGraph identified device clustering and cross-account velocity anomalies.
+RECOMMENDED NEXT-BEST-ACTION: ${c.nba}
+COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
+
+    navigator.clipboard.writeText(text)
+    setCopiedSar(true)
+    setTimeout(() => setCopiedSar(false), 2000)
+  }
+
+  return (
+    <>
+      <div className="page-heading">
+        <div>
+          <div className="eyebrow">CASE MANAGEMENT &amp; DOSSIER PORTFOLIO</div>
+          <h1>Cases</h1>
+          <p>Comprehensive repository of fraud dossiers, suspicious activity reports (SAR), and enterprise risk outcomes.</p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Button variant="outline" onClick={() => setSelectedSarCase(cases[0] || null)}>
+            {icon('FileText')} SAR Template
+          </Button>
+          <Button onClick={() => router.push('/investigations/CASE-10293')}>
+            <Icons.Plus data-icon="inline-start" /> New case filing
+          </Button>
+        </div>
+      </div>
+
+      <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: '20px' }}>
+        <div className="metric-card">
+          <div className="metric-icon">{icon('BriefcaseBusiness')}</div>
+          <div>
+            <small>Total Dossiers</small>
+            <strong>{cases.length}</strong>
+            <span>Active Enterprise Portfolio</span>
+          </div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-icon" style={{ background: '#3b2426', color: '#ff9ba0' }}>{icon('ShieldAlert')}</div>
+          <div>
+            <small>High Exposure / SAR</small>
+            <strong style={{ color: 'var(--red)' }}>{highRiskCount}</strong>
+            <span style={{ color: 'var(--red)' }}>Critical Risk Threshold</span>
+          </div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-icon">{icon('DollarSign')}</div>
+          <div>
+            <small>Prevented Exposure</small>
+            <strong>${totalExposure.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+            <span>Protected Value</span>
+          </div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-icon">{icon('Bot')}</div>
+          <div>
+            <small>Graph Resolution</small>
+            <strong>100%</strong>
+            <span>TigerGraph Grounded</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="toolbar" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div className="field-search">
+          {icon('Search')}
+          <input
+            placeholder="Search cases by ID, customer, transaction or typology..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <select value={typologyFilter} onChange={(e) => setTypologyFilter(e.target.value)}>
+          {typologies.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+        <div style={{ display: 'flex', background: '#121821', border: '1px solid var(--border)', borderRadius: '6px', overflow: 'hidden' }}>
+          <button
+            type="button"
+            onClick={() => setViewMode('grid')}
+            style={{
+              padding: '6px 10px',
+              border: 0,
+              background: viewMode === 'grid' ? '#252d3a' : 'transparent',
+              color: viewMode === 'grid' ? '#fff' : '#718096',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '11px'
+            }}
+          >
+            {icon('LayoutGrid')} Grid
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('table')}
+            style={{
+              padding: '6px 10px',
+              border: 0,
+              background: viewMode === 'table' ? '#252d3a' : 'transparent',
+              color: viewMode === 'table' ? '#fff' : '#718096',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '11px'
+            }}
+          >
+            {icon('List')} Table
+          </button>
+        </div>
+      </div>
+
+      <div className="tabs">
+        {['All', 'SAR Recommended', 'Under Compliance Review', 'Active Dossier', 'Case Closed'].map((s) => (
+          <button
+            key={s}
+            className={statusFilter === s ? 'selected' : ''}
+            onClick={() => setStatusFilter(s)}
+          >
+            {s}
+            {s === 'SAR Recommended' && <b style={{ background: '#542629', color: '#ffb2b6' }}>{highRiskCount}</b>}
+          </button>
+        ))}
+      </div>
+
+      {viewMode === 'grid' ? (
+        <div className="dossier-grid">
+          {filteredCases.map((c) => {
+            const typology = getCaseTypology(c)
+            const sarStatus = getSarStatus(c)
+            return (
+              <div key={c.id} className="dossier-card">
+                <div>
+                  <div className="dossier-top">
+                    <span className="dossier-typology">{typology}</span>
+                    <Badge tone={c.risk >= 75 ? 'red' : c.risk >= 60 ? 'amber' : 'green'}>
+                      Risk {c.risk}
+                    </Badge>
+                  </div>
+                  <div className="dossier-body">
+                    <h3>{c.id}</h3>
+                    <p>Trigger: {c.trigger}</p>
+                    <div className="dossier-metrics">
+                      <div>
+                        <span>Customer</span>
+                        <strong>{c.customer}</strong>
+                      </div>
+                      <div>
+                        <span>Exposure</span>
+                        <strong style={{ color: 'var(--amber)' }}>${c.amount.toFixed(2)}</strong>
+                      </div>
+                      <div>
+                        <span>Evidence Nodes</span>
+                        <strong>{c.evidence} graph artifacts</strong>
+                      </div>
+                      <div>
+                        <span>Confidence</span>
+                        <strong>{c.confidence}%</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', fontSize: '10px', color: 'var(--muted)' }}>
+                    <span>SAR Status:</span>
+                    <strong style={{ color: sarStatus === 'SAR Recommended' ? 'var(--red)' : '#ccd4e2' }}>
+                      {sarStatus}
+                    </strong>
+                  </div>
+                  <div className="dossier-actions">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      style={{ flex: 1, fontSize: '11px' }}
+                      onClick={() => setSelectedSarCase(c)}
+                    >
+                      {icon('FileText')} SAR File
+                    </Button>
+                    <Button
+                      size="sm"
+                      style={{ flex: 1.2, fontSize: '11px' }}
+                      onClick={() => router.push('/investigations/' + c.id)}
+                    >
+                      Deep Dive {icon('ArrowUpRight')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <section className="panel">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Case ID</th>
+                  <th>Typology</th>
+                  <th>Customer</th>
+                  <th>Amount</th>
+                  <th>Risk Score</th>
+                  <th>Confidence</th>
+                  <th>Evidence</th>
+                  <th>SAR Status</th>
+                  <th>NBA Recommendation</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCases.map((c) => (
+                  <tr key={c.id} onClick={() => router.push('/investigations/' + c.id)}>
+                    <td><strong>{c.id}</strong><small>{c.updated}</small></td>
+                    <td><span className="dossier-typology">{getCaseTypology(c)}</span></td>
+                    <td>{c.customer}</td>
+                    <td><strong>${c.amount.toFixed(2)}</strong></td>
+                    <td><span className={`risk ${c.risk >= 75 ? 'risk-high' : c.risk >= 60 ? 'risk-med' : 'risk-low'}`}>{c.risk}</span></td>
+                    <td>{c.confidence}%</td>
+                    <td>{c.evidence} items</td>
+                    <td>
+                      <Badge tone={getSarStatus(c) === 'SAR Recommended' ? 'red' : 'slate'}>
+                        {getSarStatus(c)}
+                      </Badge>
+                    </td>
+                    <td><small>{c.nba}</small></td>
+                    <td>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedSarCase(c)
+                        }}
+                      >
+                        SAR
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {selectedSarCase && (
+        <div className="drawer-backdrop" onClick={() => setSelectedSarCase(null)}>
+          <div className="drawer" onClick={(e) => e.stopPropagation()} style={{ width: '480px', overflowY: 'auto' }}>
+            <button className="drawer-close" onClick={() => setSelectedSarCase(null)}>
+              {icon('X')}
+            </button>
+            <div className="eyebrow">REGULATORY COMPLIANCE DOSSIER</div>
+            <h2>FinCEN SAR Package</h2>
+            <p>Suspicious Activity Report auto-grounded by TigerGraph multi-hop evidence and LangGraph agent reasoning.</p>
+
+            <div className="approval-summary">
+              <div>Case Identifier: <strong>{selectedSarCase.id}</strong></div>
+              <div>Subject Identity: <strong>{selectedSarCase.customer}</strong></div>
+              <div>Financial Exposure: <strong>${selectedSarCase.amount.toFixed(2)} USD</strong></div>
+              <div>Suspected Typology: <strong>{getCaseTypology(selectedSarCase)}</strong></div>
+              <div>Risk Classification: <strong>Score {selectedSarCase.risk}/100 ({selectedSarCase.risk >= 75 ? 'Critical SAR Threshold' : 'Elevated Risk'})</strong></div>
+            </div>
+
+            <div className="finding">
+              <div className="finding-label">
+                {icon('ShieldAlert')}
+                <b>Graph Provenance Findings</b>
+              </div>
+              <strong style={{ fontSize: '11px', color: '#e2e8f0', lineHeight: 1.6 }}>
+                Multi-hop graph traversal on TigerGraph confirmed device &amp; transaction clustering with 
+                suspicious pattern signature. Linked to {selectedSarCase.evidence} graph artifacts across 
+                the IEEE-CIS benchmark dataset.
+              </strong>
+              <div className="finding-foot">
+                Policy Rule: <b>Rule R4 (Shared Origin) &amp; Rule R6 (OOB Denial)</b>
+              </div>
+            </div>
+
+            <div style={{ background: '#0e141d', border: '1px solid var(--border)', borderRadius: '6px', padding: '12px', marginTop: '16px', fontFamily: 'monospace', fontSize: '10px', color: '#9ba7b9', whiteSpace: 'pre-wrap' }}>
+{`*** OFFICIAL FINCEN SAR NARRATIVE RECORD ***
+FILING ENTITY: Sentinel AI Autonomous Operations
+RECORD REF: ${selectedSarCase.id}
+PRIMARY SUBJECT: ${selectedSarCase.customer}
+TRANSACTION: ${selectedSarCase.transaction} | AMOUNT: $${selectedSarCase.amount.toFixed(2)}
+RECOMMENDED ACTION: ${selectedSarCase.nba}
+STATUS: PENDING COMPLIANCE SUPERVISOR ATTESTATION`}
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
+              <Button
+                style={{ flex: 1 }}
+                onClick={() => handleCopySar(selectedSarCase)}
+              >
+                {copiedSar ? icon('Check') : icon('Copy')} {copiedSar ? 'Copied to Clipboard!' : 'Copy SAR Dossier'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  router.push('/investigations/' + selectedSarCase.id)
+                  setSelectedSarCase(null)
+                }}
+              >
+                Open Case {icon('ArrowUpRight')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
@@ -687,7 +1138,11 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
               <EvidenceCard
                 key={e.id}
                 e={e}
-                onView={() => setSelectedEntity(e.id === 'E-004' ? 'D-77' : 'C-123')}
+                onView={() => {
+                  const parts = e.entities.split('→').map((s) => s.trim())
+                  const match = parts.find((p) => graphData?.nodes.some((n) => n.id === p)) || parts[0]
+                  setSelectedEntity(match || null)
+                }}
                 onProvenance={() => {
                   setActiveEvidenceItem(e)
                   setDrawer('provenance')
@@ -765,17 +1220,20 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
           />
           <p>{caseDetail.recommendation.what_changed}</p>
           <div className="action-reasons">
-            {(requested
+            {(caseDetail.recommendation.reasons && caseDetail.recommendation.reasons.length > 0
+              ? caseDetail.recommendation.reasons
+              : requested
               ? [
-                  'Customer denied the transaction',
-                  'Suspicious device relationship identified',
-                  'Historical related fraud case linked',
-                  'Temporal transaction sequence flagged'
+                  `Customer denial confirmed unauthorized transaction ${caseDetail.flagged_txn_id}`,
+                  `Shared entity graph links device ${caseDetail.connected_device_profiles[0] || 'profile'} across cards`,
+                  `Case memory identified confirmed fraud pattern (${caseDetail.pattern.replace(/_/g, ' ')})`,
+                  `Exposure of $${caseDetail.exposure_usd.toFixed(2)} USD requires ${caseDetail.recommendation.required_role} review`
                 ]
               : [
-                  'Uncertainty target: legitimate activity vs account compromise',
-                  'Expected decision impact: HIGH',
-                  'Policy: allowed · auto execution permitted'
+                  `Uncertainty target: legitimate use vs account takeover on ${caseDetail.flagged_txn_id}`,
+                  `Model risk score: ${caseDetail.uncertainty.risk_score}% on ${caseDetail.trigger_type.replace(/_/g, ' ')}`,
+                  `Policy ${caseDetail.recommendation.policy_rule}: automated step-up verification required before card blocking`,
+                  `Expected decision impact: HIGH once customer authentication response is received`
                 ]
             ).map((x) => (
               <div key={x}>
@@ -824,10 +1282,10 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
                 <div className="eyebrow">APPROVAL REQUEST</div>
                 <h2>Send for supervisor approval?</h2>
                 <p>
-                  Escalate {caseDetail.id} to a Fraud Supervisor under {caseDetail.recommendation.policy_rule}.
+                  Escalate {caseDetail.id} to a {caseDetail.recommendation.required_role} under {caseDetail.recommendation.policy_rule}.
                 </p>
                 <div className="approval-summary">
-                  <span>Risk <strong>Very high · {caseDetail.uncertainty.risk_score}</strong></span>
+                  <span>Risk <strong>{caseDetail.uncertainty.risk_level} · {caseDetail.uncertainty.risk_score}</strong></span>
                   <span>Confidence <strong>{caseDetail.uncertainty.confidence}%</strong></span>
                   <span>Exposure <strong>${caseDetail.exposure_usd.toFixed(2)} USD</strong></span>
                   <span>Action <strong>{caseDetail.recommendation.current_recommended_action}</strong></span>
@@ -845,19 +1303,19 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
                 <div className="lineage">
                   {(drawer === 'provenance'
                     ? [
-                        'Investigation Finding',
-                        `Evidence: ${activeEvidenceItem?.title || 'E-004'}`,
-                        activeEvidenceItem?.entities || 'C-123 → D-77 → C-811',
-                        `Query: ${activeEvidenceItem?.provenance?.query || 'find_prior_cases'}`,
+                        `Investigation: ${caseDetail.id}`,
+                        `Evidence: ${activeEvidenceItem?.id} · ${activeEvidenceItem?.title || 'Signal Item'}`,
+                        `Entities Involved: ${activeEvidenceItem?.entities || caseDetail.customer_id}`,
+                        `Tool / Query: ${activeEvidenceItem?.provenance?.tool || 'TigerGraph GraphRAG'} (${activeEvidenceItem?.provenance?.query || 'relationship_query'})`,
                         `Source: ${activeEvidenceItem?.source || 'TigerGraph'}`,
-                        `Retrieved at: ${activeEvidenceItem?.provenance?.retrieved_at || '10:04:19'}`
+                        `Retrieved at: ${activeEvidenceItem?.provenance?.retrieved_at || activeEvidenceItem?.time || 'Real-time'}`
                       ]
                     : [
-                        'Uncertainty target: Transaction authorization',
-                        'Customer transaction verification protocol',
-                        'Expected decision impact: HIGH',
-                        'Policy rule: R1 (Verify before block on single signal)',
-                        'Approval requirement: AUTO (no supervisor required)'
+                        `Target Transaction: ${caseDetail.flagged_txn_id} ($${caseDetail.amount.toFixed(2)})`,
+                        `Recommended Protocol: ${caseDetail.recommendation.current_recommended_action.replace(/_/g, ' ')}`,
+                        `Decision Impact: HIGH (Risk score ${caseDetail.uncertainty.risk_score}%, Confidence ${caseDetail.uncertainty.confidence}%)`,
+                        `Governing Policy: ${caseDetail.recommendation.policy_rule}`,
+                        `Authorization Level: ${caseDetail.recommendation.required_role}`
                       ]
                   ).map((x, i) => (
                     <div key={x}>
@@ -995,12 +1453,44 @@ function ApprovalsPage() {
   )
 }
 
-function MemoryPage() {
+function MemoryPage({ cases = [] }: { cases?: CaseListItem[] }) {
   const [memoryCases, setMemoryCases] = useState<MemoryCaseItem[]>([])
+  const [selectedCase, setSelectedCase] = useState<string>('CASE-10293')
+  const [patternFilter, setPatternFilter] = useState<string>('All')
+  const [search, setSearch] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(false)
+
+  const loadMemory = async () => {
+    setLoading(true)
+    try {
+      if (selectedCase === 'ALL') {
+        const data = await api.getMemoryCases(patternFilter === 'All' ? undefined : patternFilter, 16)
+        setMemoryCases(data)
+      } else {
+        const data = await api.getSimilarMemory(selectedCase)
+        setMemoryCases(data)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    api.getSimilarMemory('CASE-10293').then(setMemoryCases).catch(console.error)
-  }, [])
+    loadMemory()
+  }, [selectedCase, patternFilter])
+
+  const filtered = useMemo(() => {
+    if (!search) return memoryCases
+    const q = search.toLowerCase()
+    return memoryCases.filter(
+      (c) =>
+        c.id.toLowerCase().includes(q) ||
+        c.analyst_notes.toLowerCase().includes(q) ||
+        c.shared.some((s) => s.toLowerCase().includes(q))
+    )
+  }, [memoryCases, search])
 
   return (
     <>
@@ -1008,12 +1498,40 @@ function MemoryPage() {
         <div>
           <div className="eyebrow">GRAPH-INDEXED MEMORY (5,565 CASES)</div>
           <h1>Case Memory</h1>
-          <p>Historical investigation context for better decisions, never an automatic verdict.</p>
+          <p>Historical investigation context for better decisions, retrieved from TigerGraph closed cases.</p>
         </div>
       </div>
 
+      <div className="toolbar">
+        <div className="field-search">
+          {icon('Search')}
+          <input
+            placeholder="Search memory cases, notes, signals..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <select value={selectedCase} onChange={(e) => setSelectedCase(e.target.value)}>
+          <option value="CASE-10293">Target: CASE-10293 (Golden Case)</option>
+          {cases.filter(c => c.id !== 'CASE-10293').map(c => (
+            <option key={c.id} value={c.id}>Target: {c.id} ({c.trigger})</option>
+          ))}
+          <option value="ALL">Browse All Closed Cases</option>
+        </select>
+        <select value={patternFilter} onChange={(e) => setPatternFilter(e.target.value)}>
+          <option value="All">All Patterns</option>
+          <option value="card_testing">Card Testing</option>
+          <option value="card_not_present_fraud">Card Not Present</option>
+          <option value="card_not_present_new_device">CNP New Device</option>
+          <option value="out_of_region_use">Out of Region</option>
+          <option value="account_takeover">Account Takeover</option>
+          <option value="undocumented">Undocumented</option>
+          <option value="none">Cleared False Alarms</option>
+        </select>
+      </div>
+
       <div className="memory-grid">
-        {memoryCases.map((c) => (
+        {filtered.map((c) => (
           <div className="panel memory-card" key={c.id}>
             <div className="case-top">
               <Badge tone="violet">Historical context</Badge>
@@ -1038,6 +1556,11 @@ function MemoryPage() {
             </Button>
           </div>
         ))}
+        {filtered.length === 0 && (
+          <div className="panel" style={{ padding: '32px', textAlign: 'center', color: 'var(--muted)', gridColumn: '1 / -1' }}>
+            {loading ? 'Searching TigerGraph Case Memory...' : 'No historical cases found matching your filters.'}
+          </div>
+        )}
       </div>
     </>
   )
@@ -1317,16 +1840,18 @@ function SettingsPage() {
       <div className="content-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
         <div className="panel" style={{ padding: '20px' }}>
           <SectionTitle title="Backend Connection" />
-          <p>FastAPI connection status: <Badge tone="green">{health?.status || 'Online'}</Badge></p>
-          <p>Environment: <strong>Development (Port 8000)</strong></p>
-          <p>LangGraph Workflow: <strong>10-Stage Decision State Machine</strong></p>
+          <p>FastAPI connection status: <Badge tone="green">{health?.status ? toTitleCase(health.status) : 'Online'}</Badge></p>
+          <p>Environment: <strong>{health?.environment ? toTitleCase(health.environment) : 'Development'} (Port {health?.port || 8001})</strong></p>
+          <p>Workflow Engine: <strong>{health?.workflow || '10-Stage Decision State Machine'}</strong></p>
+          <p>API Base URL: <strong>{process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001'}</strong></p>
         </div>
 
         <div className="panel" style={{ padding: '20px' }}>
           <SectionTitle title="TigerGraph &amp; MCP Integration" />
-          <p>Graph Storage: <Badge tone="green">Connected</Badge></p>
-          <p>Entities Indexed: <strong>735,174 (IEEE-CIS Dataset)</strong></p>
-          <p>MCP Investigation Tools: <strong>5 Logical Tools Exposed</strong></p>
+          <p>Graph Storage: <Badge tone="green">{health?.tigergraph ? toTitleCase(health.tigergraph) : 'Connected'}</Badge></p>
+          <p>Target Graph: <strong>{health?.tigergraph_graph || 'FraudGraph'} ({health?.tigergraph_host || 'http://localhost:9000'})</strong></p>
+          <p>Entities Indexed: <strong>{health?.entities_indexed ? health.entities_indexed.toLocaleString() : '735,174'} (IEEE-CIS Dataset)</strong></p>
+          <p>MCP Investigation Tools: <strong>{health?.mcp_tools_count || 5} Logical Tools Active</strong></p>
         </div>
       </div>
     </>
@@ -1341,6 +1866,7 @@ export default function SentinelApp() {
   const [metrics, setMetrics] = useState<CaseMetrics | null>(null)
   const [auditEvents, setAuditEvents] = useState<AuditLogItem[]>([])
   const [systemStatus, setSystemStatus] = useState('TigerGraph · Connected')
+  const [graphCaseId, setGraphCaseId] = useState('CASE-10293')
 
   // Load common data on boot
   useEffect(() => {
@@ -1363,7 +1889,8 @@ export default function SentinelApp() {
 
   // Route determination
   const isInvestigationDetail = path?.startsWith('/investigations/') && path !== '/investigations'
-  const isQueue = path === '/investigations' || path === '/cases'
+  const isQueue = path === '/investigations'
+  const isCases = path === '/cases'
   const isDashboard = !path || path === '/' || path === '/dashboard'
   const isApprovals = path === '/approvals'
   const isMemory = path === '/memory'
@@ -1379,13 +1906,19 @@ export default function SentinelApp() {
     <div className="app-shell">
       <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} metrics={metrics} />
       <div className="main-shell">
-        <Header onSearch={setSearch} systemStatus={systemStatus} />
+        <Header
+          onSearch={setSearch}
+          systemStatus={systemStatus}
+          onToggleSidebar={() => setCollapsed(!collapsed)}
+          sidebarCollapsed={collapsed}
+        />
         <main className="main-content">
           {isDashboard && <Dashboard cases={cases} metrics={metrics} auditEvents={auditEvents} />}
-          {isQueue && <Queue cases={cases} />}
+          {isQueue && <Queue cases={cases} metrics={metrics} />}
+          {isCases && <CasesPage cases={cases} metrics={metrics} />}
           {isInvestigationDetail && <InvestigationWorkspace caseId={activeCaseId} />}
           {isApprovals && <ApprovalsPage />}
-          {isMemory && <MemoryPage />}
+          {isMemory && <MemoryPage cases={cases} />}
           {isAudit && <AuditPage />}
           {isBenchmark && <BenchmarkPage />}
           {isSettings && <SettingsPage />}
@@ -1397,9 +1930,24 @@ export default function SentinelApp() {
                   <h1>Enterprise Graph Visualizer</h1>
                   <p>Interactive graph topology of entities, devices, and transaction chains.</p>
                 </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <small style={{ color: 'var(--muted)', fontSize: '12px' }}>Active Case:</small>
+                  <select
+                    value={graphCaseId}
+                    onChange={(e) => setGraphCaseId(e.target.value)}
+                    style={{ padding: '6px 12px', background: '#13151f', color: '#f3f4f6', border: '1px solid #2a2d3d', borderRadius: '6px', fontSize: '12px' }}
+                  >
+                    {cases.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.id} ({c.customer} · ${c.amount.toFixed(2)})
+                      </option>
+                    ))}
+                    {cases.length === 0 && <option value="CASE-10293">CASE-10293</option>}
+                  </select>
+                </div>
               </div>
               <div className="standalone-graph">
-                <InvestigationWorkspace caseId="CASE-10293" />
+                <InvestigationWorkspace caseId={graphCaseId} />
               </div>
             </>
           )}

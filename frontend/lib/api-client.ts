@@ -105,6 +105,13 @@ export const api = {
     return fetchJson<MemoryCaseItem[]>(`/api/memory/similar/${caseId}`)
   },
 
+  async getMemoryCases(pattern?: string, limit: number = 12): Promise<MemoryCaseItem[]> {
+    const params = new URLSearchParams()
+    if (pattern && pattern !== 'All') params.append('pattern', pattern)
+    params.append('limit', String(limit))
+    return fetchJson<MemoryCaseItem[]>(`/api/memory/cases?${params.toString()}`)
+  },
+
   async getAuditEvents(caseId?: string): Promise<AuditLogItem[]> {
     const endpoint = caseId ? `/api/cases/${caseId}/audit` : '/api/audit'
     return fetchJson<AuditLogItem[]>(endpoint)
@@ -133,6 +140,92 @@ export const api = {
 
   async getBenchmarkOutput(caseId: string): Promise<any> {
     return fetchJson<any>(`/api/benchmark/output/${caseId}`)
+  },
+
+  // Investigations & Agent
+  async startInvestigation(payload?: { case_id?: string; trigger_type?: string; trigger_text?: string; amount?: number; customer_id?: string }): Promise<any> {
+    return fetchJson<any>('/api/investigations/start', {
+      method: 'POST',
+      body: JSON.stringify(payload || {})
+    })
+  },
+
+  async runInvestigation(caseId: string): Promise<any> {
+    return fetchJson<any>(`/api/investigations/${caseId}/run`, {
+      method: 'POST'
+    })
+  },
+
+  async getInvestigationState(caseId: string): Promise<any> {
+    return fetchJson<any>(`/api/investigations/${caseId}`)
+  },
+
+  subscribeToCaseEvents(
+    caseId: string,
+    onEvent: (event: any) => void,
+    onError?: (err: any) => void
+  ): () => void {
+    if (typeof window === 'undefined') return () => {}
+    const url = `${API_BASE_URL}/api/investigations/${caseId}/events`
+    const es = new EventSource(url)
+
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data)
+        onEvent(data)
+      } catch (err) {
+        onEvent({ raw: e.data })
+      }
+    }
+
+    const eventNames = [
+      'connected', 'investigation_started', 'evidence_evaluated',
+      'uncertainty_evaluated', 'evidence_requested', 'evidence_received',
+      'reassessment_completed', 'nba_generated', 'policy_checked',
+      'awaiting_approval', 'approval_decided', 'explanation_generated',
+      'case_resolved', 'step_up_auth_completed', 'analyst_info_added'
+    ]
+
+    eventNames.forEach(name => {
+      es.addEventListener(name, (e: MessageEvent) => {
+        try {
+          const data = JSON.parse(e.data)
+          onEvent({ event: name, ...data })
+        } catch {
+          onEvent({ event: name, raw: e.data })
+        }
+      })
+    })
+
+    es.onerror = (err) => {
+      if (onError) onError(err)
+    }
+
+    return () => {
+      es.close()
+    }
+  },
+
+  // Mock External Validation Simulation
+  async mockCustomerValidation(payload: { case_id: string; response: string; channel?: string; notes?: string }): Promise<any> {
+    return fetchJson<any>('/api/mock/customer-validation', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    })
+  },
+
+  async mockStepUpAuth(payload: { case_id: string; method?: string; result?: string; device_id?: string }): Promise<any> {
+    return fetchJson<any>('/api/mock/step-up-auth', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    })
+  },
+
+  async mockAnalystInfo(payload: { case_id: string; info_type?: string; notes?: string }): Promise<any> {
+    return fetchJson<any>('/api/mock/analyst-information', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    })
   },
 
   // Health

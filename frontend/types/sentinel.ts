@@ -36,6 +36,11 @@ export interface CaseMetrics {
   escalations: number
   resolved_today: number
   total_cases: number
+  active_change?: string
+  awaiting_change?: string
+  pending_change?: string
+  escalations_change?: string
+  resolved_change?: string
 }
 
 export interface EvidenceItem {
@@ -91,6 +96,7 @@ export interface RecommendationSnapshot {
   approval_required: boolean
   required_role: string
   policy_rule: string
+  reasons?: string[]
 }
 
 export interface UncertaintyAssessment {
