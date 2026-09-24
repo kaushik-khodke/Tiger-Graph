@@ -1,34 +1,27 @@
 // ==============================================================================
-// TigerGraph GSQL Schema Definition
+// TigerGraph Savanna GSQL Schema Definition (Cloud Compatible)
 // Hackathon: TigerGraph x Hacker House Goa (HHGOA) — Fraud Investigation Dataset
 // Platform: Sentinel AI — Agentic Fraud Investigation & Next-Best-Action Platform
 // ==============================================================================
-
-CREATE GRAPH FraudGraph()
-
-USE GRAPH FraudGraph
 
 // ------------------------------------------------------------------------------
 // Vertex Definitions
 // ------------------------------------------------------------------------------
 
-// Customer entity derived from card issuer mappings
 CREATE VERTEX Customer (
     PRIMARY_ID id STRING,
     created_at DATETIME,
     risk_level STRING
-) WITH STATS="OUTDEGREE_BY_EDGETYPE";
+);
 
-// Payment Card entity (e.g., C12382-K1)
 CREATE VERTEX Card (
     PRIMARY_ID id STRING,
     network STRING,
     card_type STRING,
     issuer_code STRING,
     status STRING DEFAULT "ACTIVE"
-) WITH STATS="OUTDEGREE_BY_EDGETYPE";
+);
 
-// Individual financial transactions from IEEE-CIS dataset
 CREATE VERTEX Transaction (
     PRIMARY_ID id STRING,
     amt DOUBLE,
@@ -38,9 +31,8 @@ CREATE VERTEX Transaction (
     product_code STRING,
     dist1 DOUBLE,
     dist2 DOUBLE
-) WITH STATS="OUTDEGREE_BY_EDGETYPE";
+);
 
-// Device footprint (DeviceInfo + OS + browser + screen)
 CREATE VERTEX DeviceProfile (
     PRIMARY_ID id STRING,
     device_info STRING,
@@ -49,20 +41,17 @@ CREATE VERTEX DeviceProfile (
     screen_resolution STRING,
     proxy_status STRING,
     is_new_device STRING
-) WITH STATS="OUTDEGREE_BY_EDGETYPE";
+);
 
-// Email domain entity
 CREATE VERTEX EmailDomain (
     PRIMARY_ID domain STRING
-) WITH STATS="OUTDEGREE_BY_EDGETYPE";
+);
 
-// Billing geographic region code (addr1)
 CREATE VERTEX BillingRegion (
     PRIMARY_ID region_code STRING,
     country_code STRING
-) WITH STATS="OUTDEGREE_BY_EDGETYPE";
+);
 
-// Historical closed cases (July–October 2016 ground-truth memory)
 CREATE VERTEX ClosedCase (
     PRIMARY_ID id STRING,
     outcome STRING,
@@ -72,9 +61,8 @@ CREATE VERTEX ClosedCase (
     closed_at DATETIME,
     report_filed STRING,
     analyst_notes STRING
-) WITH STATS="OUTDEGREE_BY_EDGETYPE";
+);
 
-// Investigation cases created by Sentinel AI agent (Dynamic Case Memory)
 CREATE VERTEX InvestigationCase (
     PRIMARY_ID id STRING,
     case_id STRING,
@@ -88,45 +76,32 @@ CREATE VERTEX InvestigationCase (
     stop_reason STRING,
     sar_filed BOOL,
     resolved_at DATETIME
-) WITH STATS="OUTDEGREE_BY_EDGETYPE";
-
+);
 
 // ------------------------------------------------------------------------------
 // Edge Definitions
 // ------------------------------------------------------------------------------
 
-// Customer ownership of payment cards
 CREATE UNDIRECTED EDGE OWNS (FROM Customer, TO Card);
 
-// Card initiation of transactions
-CREATE DIRECTED EDGE MADE (FROM Card, TO Transaction);
+CREATE UNDIRECTED EDGE MADE (FROM Card, TO Transaction);
 
-// Transaction origin device profile
-CREATE DIRECTED EDGE FROM_DEVICE (FROM Transaction, TO DeviceProfile);
+CREATE UNDIRECTED EDGE FROM_DEVICE (FROM Transaction, TO DeviceProfile);
 
-// Transaction email association
-CREATE DIRECTED EDGE PURCHASER_EMAIL (FROM Transaction, TO EmailDomain);
+CREATE UNDIRECTED EDGE PURCHASER_EMAIL (FROM Transaction, TO EmailDomain);
 
-// Transaction geographic billing region
-CREATE DIRECTED EDGE BILLED_IN (FROM Transaction, TO BillingRegion);
+CREATE UNDIRECTED EDGE BILLED_IN (FROM Transaction, TO BillingRegion);
 
-// Temporal sequence of card transactions
 CREATE DIRECTED EDGE NEXT (FROM Transaction, TO Transaction, delta_seconds INT);
 
-// Closed case linkage to historical transactions
-CREATE DIRECTED EDGE INVOLVES (FROM ClosedCase, TO Transaction);
+CREATE UNDIRECTED EDGE INVOLVES (FROM ClosedCase, TO Transaction);
 
-// Closed case linkage to primary card
-CREATE DIRECTED EDGE ON_CARD (FROM ClosedCase, TO Card);
+CREATE UNDIRECTED EDGE ON_CARD (FROM ClosedCase, TO Card);
 
-// Closed case linkage to connected/compromised cards
 CREATE UNDIRECTED EDGE CONNECTED_TO (FROM ClosedCase, TO Card);
 
-// Active investigation case linkage to cards
 CREATE UNDIRECTED EDGE INVESTIGATED_CARD (FROM InvestigationCase, TO Card);
 
-// Active investigation case linkage to affected transactions
-CREATE DIRECTED EDGE INVESTIGATED_TXN (FROM InvestigationCase, TO Transaction);
+CREATE UNDIRECTED EDGE INVESTIGATED_TXN (FROM InvestigationCase, TO Transaction);
 
-// Active investigation case linkage to discovered device profiles
 CREATE UNDIRECTED EDGE IDENTIFIED_DEVICE (FROM InvestigationCase, TO DeviceProfile);

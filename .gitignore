@@ -50,3 +50,4 @@ __v0_jsx-dev-runtime.ts
 # Benchmark runs cache
 benchmark_runs/
 
+tigergraph/*.js
