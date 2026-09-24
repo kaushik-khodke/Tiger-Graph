@@ -1,0 +1,50 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: sentinel-backend
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - APP_ENV=production
+      - API_HOST=0.0.0.0
+      - API_PORT=8001
+      - FRONTEND_ORIGIN=http://localhost:3000
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GEMINI_MODEL_PRIORITY=gemini-2.5-flash,gemini-2.0-flash,gemini-1.5-flash,gemini-1.5-pro,gemini-3.8-flash,gemini-3.5-flash-lite
+      - TIGERGRAPH_HOST=${TIGERGRAPH_HOST:-http://localhost:9000}
+      - TIGERGRAPH_GRAPH=${TIGERGRAPH_GRAPH:-FraudGraph}
+      - TIGERGRAPH_USERNAME=${TIGERGRAPH_USERNAME:-tigergraph}
+      - TIGERGRAPH_PASSWORD=${TIGERGRAPH_PASSWORD:-tigergraph}
+      - TIGERGRAPH_SECRET=${TIGERGRAPH_SECRET:-}
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
+      - LANGFUSE_BASE_URL=${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}
+    volumes:
+      - ./cases:/app/cases
+    networks:
+      - sentinel-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8001
+    container_name: sentinel-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8001
+    depends_on:
+      - backend
+    networks:
+      - sentinel-network
+
+networks:
+  sentinel-network:
+    driver: bridge

@@ -101,5 +101,5 @@
   "stop_reason": "Customer verification response settled the question and policy actions selected.",
   "tool_calls": 7,
   "tokens": 4250,
-  "latency_s": 0.45
+  "latency_s": 0.44
 }
