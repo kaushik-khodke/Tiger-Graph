@@ -229,7 +229,7 @@ function MetricCards({ metrics }: { metrics: CaseMetrics | null }) {
 
 function InvestigationTable({ cases, compact = false }: { cases: CaseListItem[]; compact?: boolean }) {
   const router = useRouter()
-  const displayCases = compact ? cases.slice(0, 3) : cases.slice(0, 10)
+  const displayCases = compact ? cases.slice(0, 5) : cases.slice(0, 10)
 
   return (
     <div className="table-wrap">
