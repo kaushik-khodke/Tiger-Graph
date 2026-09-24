@@ -1,1 +1,1 @@
-# tests package
+# Sentinel AI Automated Test Suite
