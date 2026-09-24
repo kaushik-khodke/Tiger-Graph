@@ -8,19 +8,19 @@ class GraphService:
         if case_id == "CASE-10293":
             nodes = [
                 GraphNode(id="C-123", label="Customer", sub="C-123", x=20.0, y=48.0, kind="customer", meta={"risk": "Medium", "tenure": "3 years"}),
-                GraphNode(id="A-223", label="Account", sub="A-223", x=43.0, y=20.0, kind="account", meta={"type": "Checking"}),
-                GraphNode(id="D-77", label="Device", sub="D-77", x=46.0, y=74.0, kind="device", meta={"model": "Samsung SM-G892A", "os": "Android 7.0", "flag": "Shared Profile"}),
-                GraphNode(id="TXN-10293", label="Transaction", sub="TXN-10293", x=68.0, y=46.0, kind="transaction", meta={"amount": "$259.98", "channel": "online"}),
-                GraphNode(id="C-811", label="Customer", sub="C-811", x=72.0, y=80.0, kind="customer", meta={"status": "High Risk"}),
-                GraphNode(id="M-42", label="Merchant", sub="M-42", x=90.0, y=42.0, kind="merchant", meta={"category": "Electronics"}),
+                GraphNode(id="A-223", label="Account", sub="A-223", x=44.0, y=22.0, kind="account", meta={"type": "Checking"}),
+                GraphNode(id="D-77", label="Device", sub="D-77", x=46.0, y=72.0, kind="device", meta={"model": "Samsung SM-G892A", "os": "Android 7.0", "flag": "Shared Profile"}),
+                GraphNode(id="TXN-10293", label="Transaction", sub="TXN-10293", x=68.0, y=34.0, kind="transaction", meta={"amount": "$259.98", "channel": "online"}),
+                GraphNode(id="C-811", label="Customer", sub="C-811", x=72.0, y=78.0, kind="customer", meta={"status": "High Risk"}),
+                GraphNode(id="M-42", label="Merchant", sub="M-42", x=90.0, y=36.0, kind="merchant", meta={"category": "Electronics"}),
                 GraphNode(id="CASE-103", label="Case", sub="CASE-103", x=90.0, y=78.0, kind="case", meta={"outcome": "Confirmed Fraud", "date": "2016-08-14"}),
             ]
             edges = [
                 ("C-123", "A-223"),
-                ("C-123", "D-77"),
-                ("C-123", "TXN-10293"),
-                ("D-77", "C-811"),
+                ("A-223", "TXN-10293"),
                 ("TXN-10293", "M-42"),
+                ("C-123", "D-77"),
+                ("D-77", "C-811"),
                 ("C-811", "CASE-103"),
             ]
             return GraphData(
