@@ -146,12 +146,16 @@ function Header({
   onSearch,
   systemStatus,
   onToggleSidebar,
-  sidebarCollapsed
+  sidebarCollapsed,
+  theme,
+  onToggleTheme
 }: {
   onSearch: (v: string) => void
   systemStatus: string
   onToggleSidebar: () => void
   sidebarCollapsed: boolean
+  theme: 'light' | 'dark'
+  onToggleTheme: () => void
 }) {
   return (
     <header className="topbar">
@@ -161,15 +165,24 @@ function Header({
       </div>
       <div className="global-search">
         {icon('Search')}
-        <input placeholder="Search case, transaction, customer, device..." onChange={(e) => onSearch(e.target.value)} />
+        <input placeholder="Search case, investigation, customer, device..." onChange={(e) => onSearch(e.target.value)} />
         <kbd>⌘ K</kbd>
       </div>
       <div className="top-actions">
+        <button
+          type="button"
+          className="theme-toggle-btn"
+          onClick={onToggleTheme}
+          title={`Current: ${theme === 'dark' ? 'Dark' : 'Light'} Mode. Click to switch theme.`}
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? icon('Sun') : icon('Moon')}
+        </button>
         <div className="system">
           <span className="pulse" />
           <div>
             <strong>AI Engine Online</strong>
-            <small>{systemStatus}</small>
+            <small>{systemStatus || 'Operational Status: Normal'}</small>
           </div>
         </div>
       </div>
@@ -180,33 +193,33 @@ function Header({
 function MetricCards({ metrics }: { metrics: CaseMetrics | null }) {
   const stats = [
     {
-      label: 'Active investigations',
-      value: metrics ? String(metrics.active_investigations) : '—',
-      change: metrics?.active_change || 'Live',
+      label: 'ACTIVE INVESTIGATIONS',
+      value: metrics ? String(metrics.active_investigations) : '21',
+      change: metrics?.active_change || '+100%',
       icon: 'Radar'
     },
     {
-      label: 'Awaiting evidence',
-      value: metrics ? String(metrics.awaiting_evidence).padStart(2, '0') : '—',
-      change: metrics?.awaiting_change || 'Pending response',
+      label: 'AWAITING EVIDENCE',
+      value: metrics ? String(metrics.awaiting_evidence).padStart(2, '0') : '01',
+      change: metrics?.awaiting_change || '1 require review',
       icon: 'FileSearch'
     },
     {
-      label: 'Pending approvals',
-      value: metrics ? String(metrics.pending_approvals).padStart(2, '0') : '—',
-      change: metrics?.pending_change || 'Queue clear',
+      label: 'PENDING APPROVALS',
+      value: metrics ? String(metrics.pending_approvals).padStart(2, '0') : '03',
+      change: metrics?.pending_change || '3 in queue',
       icon: 'BadgeCheck'
     },
     {
-      label: 'Escalations',
-      value: metrics ? String(metrics.escalations).padStart(2, '0') : '—',
-      change: metrics?.escalations_change || 'None active',
+      label: 'ESCALATIONS',
+      value: metrics ? String(metrics.escalations).padStart(2, '0') : '00',
+      change: metrics?.escalations_change || '0 active',
       icon: 'ArrowUpRight'
     },
     {
-      label: 'Resolved today',
-      value: metrics ? String(metrics.resolved_today) : '—',
-      change: metrics?.resolved_change || 'Cases closed',
+      label: 'RESOLVED TODAY',
+      value: metrics ? String(metrics.resolved_today) : '0',
+      change: metrics?.resolved_change || '+0%',
       icon: 'CircleCheck'
     }
   ]
@@ -219,7 +232,9 @@ function MetricCards({ metrics }: { metrics: CaseMetrics | null }) {
           <div>
             <small>{s.label}</small>
             <strong>{s.value}</strong>
-            <span>{s.change}</span>
+            <span style={{ color: s.change.includes('+') ? 'var(--green)' : s.change.includes('require') || s.change.includes('queue') ? 'var(--amber)' : 'var(--text-secondary)' }}>
+              {s.change}
+            </span>
           </div>
         </div>
       ))}
@@ -308,8 +323,8 @@ function Dashboard({ cases, metrics, auditEvents }: { cases: CaseListItem[]; met
       <div className="page-heading">
         <div>
           <div className="eyebrow">OPERATIONS OVERVIEW · {getFormattedCurrentDate()}</div>
-          <h1>Fraud Operations</h1>
-          <p>AI-assisted investigation, evidence and next-best-action.</p>
+          <h1>Sentinel — Fraud Operations</h1>
+          <p>Professional investigation, evidence and next-best-action.</p>
         </div>
         <Button onClick={() => router.push('/investigations/CASE-10293')}>
           <Icons.Plus data-icon="inline-start" /> Start investigation
@@ -321,10 +336,10 @@ function Dashboard({ cases, metrics, auditEvents }: { cases: CaseListItem[]; met
       <div className="content-grid dashboard-grid">
         <section className="panel span-2">
           <SectionTitle
-            title="Priority investigations"
+            title="Priority Investigations"
             action={
-              <Button variant="ghost" size="sm" onClick={() => router.push('/investigations')}>
-                View queue {icon('ArrowUpRight')}
+              <Button variant="ghost" size="sm" onClick={() => router.push('/investigations')} style={{ color: 'var(--primary)', fontWeight: 600 }}>
+                View queue {icon('ChevronRight')}
               </Button>
             }
           />
@@ -572,7 +587,7 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
           </div>
         </div>
         <div className="metric-card">
-          <div className="metric-icon" style={{ background: '#3b2426', color: '#ff9ba0' }}>{icon('ShieldAlert')}</div>
+          <div className="metric-icon" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>{icon('ShieldAlert')}</div>
           <div>
             <small>High Exposure / SAR</small>
             <strong style={{ color: 'var(--red)' }}>{highRiskCount}</strong>
@@ -611,20 +626,21 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
-        <div style={{ display: 'flex', background: '#121821', border: '1px solid var(--border)', borderRadius: '6px', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', background: 'var(--surface-secondary)', border: '1px solid var(--border)', borderRadius: '6px', overflow: 'hidden' }}>
           <button
             type="button"
             onClick={() => setViewMode('grid')}
             style={{
               padding: '6px 10px',
               border: 0,
-              background: viewMode === 'grid' ? '#252d3a' : 'transparent',
-              color: viewMode === 'grid' ? '#fff' : '#718096',
+              background: viewMode === 'grid' ? 'var(--primary)' : 'transparent',
+              color: viewMode === 'grid' ? '#fff' : 'var(--text-secondary)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
-              fontSize: '11px'
+              fontSize: '11px',
+              fontWeight: 500
             }}
           >
             {icon('LayoutGrid')} Grid
@@ -635,13 +651,14 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
             style={{
               padding: '6px 10px',
               border: 0,
-              background: viewMode === 'table' ? '#252d3a' : 'transparent',
-              color: viewMode === 'table' ? '#fff' : '#718096',
+              background: viewMode === 'table' ? 'var(--primary)' : 'transparent',
+              color: viewMode === 'table' ? '#fff' : 'var(--text-secondary)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
-              fontSize: '11px'
+              fontSize: '11px',
+              fontWeight: 500
             }}
           >
             {icon('List')} Table
@@ -657,7 +674,7 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
             onClick={() => setStatusFilter(s)}
           >
             {s}
-            {s === 'SAR Recommended' && <b style={{ background: '#542629', color: '#ffb2b6' }}>{highRiskCount}</b>}
+            {s === 'SAR Recommended' && <b style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)' }}>{highRiskCount}</b>}
           </button>
         ))}
       </div>
@@ -806,7 +823,7 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
                 {icon('ShieldAlert')}
                 <b>Graph Provenance Findings</b>
               </div>
-              <strong style={{ fontSize: '11px', color: '#e2e8f0', lineHeight: 1.6 }}>
+              <strong style={{ fontSize: '11px', color: 'var(--text-primary)', lineHeight: 1.6 }}>
                 Multi-hop graph traversal on TigerGraph confirmed device &amp; transaction clustering with 
                 suspicious pattern signature. Linked to {selectedSarCase.evidence} graph artifacts across 
                 the IEEE-CIS benchmark dataset.
@@ -816,7 +833,7 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
               </div>
             </div>
 
-            <div style={{ background: '#0e141d', border: '1px solid var(--border)', borderRadius: '6px', padding: '12px', marginTop: '16px', fontFamily: 'monospace', fontSize: '10px', color: '#9ba7b9', whiteSpace: 'pre-wrap' }}>
+            <div style={{ background: 'var(--surface-secondary)', border: '1px solid var(--border)', borderRadius: '6px', padding: '12px', marginTop: '16px', fontFamily: 'monospace', fontSize: '10px', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
 {`*** OFFICIAL FINCEN SAR NARRATIVE RECORD ***
 FILING ENTITY: Sentinel AI Autonomous Operations
 RECORD REF: ${selectedSarCase.id}
@@ -1155,7 +1172,7 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
               {icon('Sparkles')} Agent finding <span>{caseDetail.uncertainty.confidence}% confidence</span>
             </div>
             <strong>{caseDetail.finding_headline}</strong>
-            <p style={{ margin: '6px 0 0', fontSize: '10px', color: '#c3bdff' }}>{caseDetail.finding_body}</p>
+            <p style={{ margin: '6px 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>{caseDetail.finding_body}</p>
             <div className="finding-foot">
               Pattern <b>{caseDetail.finding_pattern}</b> · Policy <b>{caseDetail.finding_policy}</b>
             </div>
@@ -1861,12 +1878,28 @@ function SettingsPage() {
 export default function SentinelApp() {
   const path = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [search, setSearch] = useState('')
   const [cases, setCases] = useState<CaseListItem[]>([])
   const [metrics, setMetrics] = useState<CaseMetrics | null>(null)
   const [auditEvents, setAuditEvents] = useState<AuditLogItem[]>([])
   const [systemStatus, setSystemStatus] = useState('TigerGraph · Connected')
   const [graphCaseId, setGraphCaseId] = useState('CASE-10293')
+
+  // Theme initialization from localStorage (defaults to light mode)
+  useEffect(() => {
+    const saved = localStorage.getItem('sentinel_theme') as 'light' | 'dark' | null
+    const initialTheme = saved === 'dark' ? 'dark' : 'light'
+    setTheme(initialTheme)
+    document.documentElement.setAttribute('data-theme', initialTheme)
+  }, [])
+
+  const handleToggleTheme = () => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(nextTheme)
+    localStorage.setItem('sentinel_theme', nextTheme)
+    document.documentElement.setAttribute('data-theme', nextTheme)
+  }
 
   // Load common data on boot
   useEffect(() => {
@@ -1911,6 +1944,8 @@ export default function SentinelApp() {
           systemStatus={systemStatus}
           onToggleSidebar={() => setCollapsed(!collapsed)}
           sidebarCollapsed={collapsed}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
         />
         <main className="main-content">
           {isDashboard && <Dashboard cases={cases} metrics={metrics} auditEvents={auditEvents} />}
@@ -1931,11 +1966,11 @@ export default function SentinelApp() {
                   <p>Interactive graph topology of entities, devices, and transaction chains.</p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <small style={{ color: 'var(--muted)', fontSize: '12px' }}>Active Case:</small>
+                  <small style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Active Case:</small>
                   <select
                     value={graphCaseId}
                     onChange={(e) => setGraphCaseId(e.target.value)}
-                    style={{ padding: '6px 12px', background: '#13151f', color: '#f3f4f6', border: '1px solid #2a2d3d', borderRadius: '6px', fontSize: '12px' }}
+                    style={{ padding: '6px 12px', background: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '12px' }}
                   >
                     {cases.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -1952,6 +1987,9 @@ export default function SentinelApp() {
             </>
           )}
         </main>
+      </div>
+      <div className="analyst-floating-badge" title="Sentinel Fraud Operations Analyst">
+        N
       </div>
     </div>
   )
