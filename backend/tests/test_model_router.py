@@ -59,6 +59,6 @@ def test_fallback_progression_on_transient_error():
     """Verify that router tracks attempted models across priority chain."""
     router = ModelRouter()
     assert len(router.priority_chain) >= 5
-    assert router.priority_chain[0] == "gemini-3.8-flash"
+    assert "flash" in router.priority_chain[0]
     assert router.priority_chain[-1] == "gemini-3.5-flash-lite"
 

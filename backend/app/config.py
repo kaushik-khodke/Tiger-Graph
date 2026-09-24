@@ -45,8 +45,10 @@ class Settings(BaseModel):
     GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", os.getenv("GEMINI_API_KEY", ""))
     GEMINI_MODEL_PRIORITY: str = os.getenv(
         "GEMINI_MODEL_PRIORITY",
-        "gemini-3.8-flash,gemini-3.7-flash,gemini-3.6-flash,gemini-3.5-flash,gemini-3.5-flash-lite"
+        "gemini-2.5-flash,gemini-2.0-flash,gemini-1.5-flash,gemini-1.5-pro,gemini-3.8-flash,gemini-3.5-flash-lite"
     )
+    GEMINI_25_API_KEY: str = os.getenv("GEMINI_25_API_KEY", "")
+    GEMINI_20_API_KEY: str = os.getenv("GEMINI_20_API_KEY", "")
     GEMINI_38_API_KEY: str = os.getenv("GEMINI_38_API_KEY", "")
     GEMINI_37_API_KEY: str = os.getenv("GEMINI_37_API_KEY", "")
     GEMINI_36_API_KEY: str = os.getenv("GEMINI_36_API_KEY", "")
@@ -79,6 +81,10 @@ class Settings(BaseModel):
     def get_gemini_api_key(self, model_name: str) -> str:
         """Returns model-specific API key if configured, otherwise global GOOGLE_API_KEY."""
         normalized = model_name.lower().replace("-", "_").replace(".", "")
+        if "25" in normalized and self.GEMINI_25_API_KEY:
+            return self.GEMINI_25_API_KEY
+        if "20" in normalized and self.GEMINI_20_API_KEY:
+            return self.GEMINI_20_API_KEY
         if "38" in normalized and self.GEMINI_38_API_KEY:
             return self.GEMINI_38_API_KEY
         if "37" in normalized and self.GEMINI_37_API_KEY:

@@ -173,36 +173,36 @@ class ModelRouter:
                 items=[
                     StructuredEvidenceItem(
                         title="Shared device relationship",
-                        description="Customer authenticated via device profile linked to historical fraud records.",
-                        source="TigerGraph · get_device_relationships",
+                        description=f"Transaction context on {ctx.get('flagged_txn_id', 'txn')} linked to device profile in cluster.",
+                        source="graph",
                         strength="Strong",
                         tone="support",
-                        entities=["D-77", "C-811", "C-123"],
+                        entities=[ctx.get("flagged_txn_id", "TXN"), ctx.get("card_id", "CARD")],
                         pattern_reference="FP-03"
                     ),
                     StructuredEvidenceItem(
-                        title="Historical legitimate travel",
-                        description="Customer previously cleared legitimate transactions from this billing region.",
-                        source="TigerGraph · find_related_cases",
+                        title="Customer account profile",
+                        description=f"Cardholder historical tenure and spending baseline for case {case_id}.",
+                        source="graph",
                         strength="Moderate",
                         tone="contradict",
-                        entities=["C-123"],
+                        entities=[ctx.get("customer_id", "CUST")],
                         pattern_reference="FP-01"
                     )
                 ],
                 primary_findings=[
-                    "Shared hardware signature between multiple distinct cardholders.",
-                    "Contradictory travel history creates ambiguity in intent."
+                    f"Relationship traversal completed for {case_id}.",
+                    f"Assessing transaction amount ${amount:.2f} against historical patterns."
                 ],
                 contradictions_found=[
-                    "Cardholder has established history in billing region, contradicting pure compromise hypothesis."
+                    "Cardholder account history analyzed against transaction footprint."
                 ]
             )
 
         if schema == EvidenceRequest:
             return EvidenceRequest(
                 action_type="customer_validation",
-                reason="Direct validation with account holder is required to resolve whether $259.98 online charge was authorized.",
+                reason=f"Direct validation with account holder is required to resolve whether ${amount:.2f} charge was authorized.",
                 target_entity=ctx.get("flagged_txn_id", "TXN-10293"),
                 decision_impact="Confirmed recognition clears alert; unconfirmed or denied transaction triggers immediate card block and escalation."
             )
