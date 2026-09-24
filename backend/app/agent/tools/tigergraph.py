@@ -40,13 +40,20 @@ def get_neighbors(entity_type: str, entity_id: str, depth: int = 1, case_id: Opt
 
 def get_transaction_context(txn_id: str, case_id: Optional[str] = None) -> Dict[str, Any]:
     start = time.time()
+    from ...services.data_service import data_service
+    c_data = data_service._cases.get(case_id, {}) if case_id else {}
+    amt = float(c_data.get("amount", 259.98))
+    card_hash = c_data.get("card_id", "C-123-K1")
+    channel = "online" if "online" in c_data.get("trigger_text", "online").lower() else "pos"
+    merchant = "Regional POS Merchant" if "region" in c_data.get("pattern", "") else "M-42 Electronics"
+
     res = {
         "txn_id": txn_id,
-        "amount": 259.98,
-        "channel": "online",
-        "timestamp": "2016-12-05 10:01:00",
-        "merchant": "M-42 Electronics",
-        "card_hash": "C-123-K1",
+        "amount": amt,
+        "channel": channel,
+        "timestamp": c_data.get("opened_at", "2016-12-05 10:01:00"),
+        "merchant": merchant,
+        "card_hash": card_hash,
         "currency": "USD"
     }
     dur = (time.time() - start) * 1000.0
@@ -55,7 +62,7 @@ def get_transaction_context(txn_id: str, case_id: Optional[str] = None) -> Dict[
         investigation_tracer.record_tool_call(case_id, "get_transaction_context", query, res, dur)
     return {
         "context": res,
-        "provenance": _make_provenance("get_transaction_context", query, [txn_id, "C-123-K1", "M-42"])
+        "provenance": _make_provenance("get_transaction_context", query, [txn_id, card_hash, merchant])
     }
 
 def get_customer_history(customer_id: str, case_id: Optional[str] = None) -> Dict[str, Any]:
