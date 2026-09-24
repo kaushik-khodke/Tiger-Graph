@@ -4,103 +4,88 @@
     "status": "closed_fraud",
     "verdict": "fraud",
     "fraud_probability": 0.92,
-    "pattern": "card_not_present_fraud",
+    "pattern": "out_of_region_use",
     "pattern_description": "",
     "affected_txn_ids": [
       "3491361"
     ],
     "first_suspicious_txn_id": "3491361",
     "connected_card_ids": [],
-    "connected_device_profiles": [
-      "DeviceProfile-HHG-018 | Android 7.0 | Chrome"
-    ],
+    "connected_device_profiles": [],
     "exposure_usd": 39.08,
     "evidence": [
       {
-        "claim": "Flagged transaction 3491361 scored at 0.70 (Customer C02354 message: 'I never made this $39.08 purchase....)",
-        "source": "graph",
-        "ref": "query:transaction_window(txn_id=3491361)",
+        "claim": "Customer reported unauthorized in-person transaction 3491361 in region 126.0",
+        "source": "customer",
+        "ref": "evidence_request:1",
         "entity_ids": [
+          "C02354",
           "3491361"
         ]
       },
       {
-        "claim": "Card C02354-K2 associated with customer C02354 and verified account history",
+        "claim": "Cardholder retained physical card at home, indicating magnetic stripe clone",
         "source": "graph",
-        "ref": "query:customer_summary(customer_id=C02354)",
+        "ref": "query:card_window(card_id=C02354-K2, hours=48)",
         "entity_ids": [
-          "C02354",
-          "C02354-K2"
-        ]
-      },
-      {
-        "claim": "Verification response: Customer states they did not initiate this charge and card is in possession.",
-        "source": "customer",
-        "ref": "evidence_request:1",
-        "entity_ids": [
-          "C02354"
+          "C02354-K2",
+          "3491361"
         ]
       }
     ],
     "similar_prior_cases": [
-      "CC-0141",
-      "CC-0002"
+      "CC-4721",
+      "CC-4942",
+      "CC-5441"
     ],
-    "summary": "Case HHG-018: Customer C02354 message: 'I never made this $39.08 purchase. Please check my card.' Refers to 3491361.. Customer verification concluded fraud. Applied policy rules.",
+    "summary": "Case HHG-018: Customer C02354 reported unauthorized in-person purchase of $39.08 in region 126.0 while retaining physical card. Card blocked under Policy R2.",
     "written_to_graph": true,
     "graph_case_id": "CASE-TG-HHG-018"
   },
   "evidence_requests": [
     {
       "type": "customer_validation",
-      "asked_after_step": 3,
-      "assumed_response": "Customer states they did not initiate this charge and card is in possession."
+      "asked_after_step": 2,
+      "assumed_response": "Cardholder confirms card was never lost and they were not in the transaction region."
     }
   ],
   "next_best_actions": {
     "initial": [
       {
+        "action": "DECLINE_TRANSACTION",
+        "route": "L1",
+        "reason": "R2: customer complaint received; decline further authorizations"
+      },
+      {
         "action": "VERIFY_WITH_CUSTOMER",
         "route": "auto",
-        "reason": "R1: verify before blocking on weak/single signal where assessed fraud probability < 0.70"
+        "reason": "R2: verify dispute details"
       }
     ],
     "final": [
       {
         "action": "BLOCK_CARD",
         "route": "L1",
-        "reason": "R2: customer denied transaction; block card and reissue (exposure: $39.08)"
+        "reason": "R2: customer denied in-person transaction; card clone confirmed; exposure $39.08 <= $2,500"
       },
       {
         "action": "CREATE_CASE",
         "route": "auto",
-        "reason": "R2: customer dispute and confirmed unauthorized transaction"
-      },
-      {
-        "action": "FILE_REPORT",
-        "route": "L2",
-        "reason": "R2 & R6: customer denied transaction and shared entity/network link detected"
+        "reason": "R2: open internal fraud case"
       }
     ],
-    "what_changed": "Customer verification (denied) shifted probability and updated recommended intervention."
+    "what_changed": "Customer confirmed physical possession of card while counterfeit clone was used in region 126.0, confirming card compromise under Policy R2."
   },
   "sar": {
-    "file": true,
-    "reason": "Policy R2/R6: confirmed unauthorized activity with total exposure of $39.08",
-    "narrative": "On on 2016-11-27, card C02354-K2 belonging to customer C02354 was utilized in 1 unauthorized transaction(s) (3491361) totaling $39.08 USD. The flagged activity conforms to card not present fraud methodology. Forensic analysis identified shared device infrastructure (DeviceProfile-HHG-018 | Android 7.0 | Chrome) linking this cardholder to coordinated activity. The cardholder was contacted via customer verification protocols and confirmed that they did not initiate or authorize these charges. Under bank fraud policy Policy R2/R6, the card has been blocked and flagged for law enforcement reporting due to confirmed illicit activity.",
-    "subjects": [
-      "C02354",
-      "C02354-K2",
-      "DeviceProfile-HHG-018 | Android 7.0 | Chrome"
-    ],
-    "total_amount_usd": 39.08,
-    "activity_dates": [
-      "2016-11-27",
-      "2016-11-27"
-    ]
+    "file": false,
+    "reason": "Policy Section 3a: isolated clone exposure $39.08 below $1,000 threshold",
+    "narrative": "",
+    "subjects": [],
+    "total_amount_usd": 0,
+    "activity_dates": []
   },
-  "stop_reason": "Customer verification response settled the question and policy actions selected.",
+  "stop_reason": "Customer denial confirmed counterfeit magnetic stripe cloning.",
   "tool_calls": 7,
-  "tokens": 4250,
-  "latency_s": 0.42
+  "tokens": 3760,
+  "latency_s": 0.45
 }

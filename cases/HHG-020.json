@@ -3,7 +3,7 @@
   "case": {
     "status": "closed_legitimate",
     "verdict": "legitimate",
-    "fraud_probability": 0.12,
+    "fraud_probability": 0.11,
     "pattern": "none",
     "pattern_description": "",
     "affected_txn_ids": [],
@@ -13,24 +13,15 @@
     "exposure_usd": 0.0,
     "evidence": [
       {
-        "claim": "Flagged transaction 3509359 scored at 0.52 (Real-time model scored transaction 3509359 ($125.08, online)...)",
+        "claim": "Transaction 3509359 matches customer history",
         "source": "graph",
-        "ref": "query:transaction_window(txn_id=3509359)",
+        "ref": "query:card_window(card_id=C12265-K2, hours=24)",
         "entity_ids": [
           "3509359"
         ]
       },
       {
-        "claim": "Card C12265-K2 associated with customer C12265 and verified account history",
-        "source": "graph",
-        "ref": "query:customer_summary(customer_id=C12265)",
-        "entity_ids": [
-          "C12265",
-          "C12265-K2"
-        ]
-      },
-      {
-        "claim": "Verification response: Customer confirmed they made the purchase.",
+        "claim": "Cardholder confirmed transaction legitimacy",
         "source": "customer",
         "ref": "evidence_request:1",
         "entity_ids": [
@@ -39,10 +30,10 @@
       }
     ],
     "similar_prior_cases": [
-      "CC-0003",
-      "CC-0009"
+      "CC-0009",
+      "CC-0010"
     ],
-    "summary": "Case HHG-020: Real-time model scored transaction 3509359 ($125.08, online) at 0.52. Review and decide.. Customer verification concluded legitimate. Applied policy rules.",
+    "summary": "Case HHG-020: Transaction 3509359 ($125.08) scored 0.52. Cardholder confirmed purchase. Closed as legitimate under Policy R3.",
     "written_to_graph": true,
     "graph_case_id": "CASE-TG-HHG-020"
   },
@@ -50,7 +41,7 @@
     {
       "type": "customer_validation",
       "asked_after_step": 3,
-      "assumed_response": "Customer confirmed they made the purchase."
+      "assumed_response": "Cardholder confirmed they authorized the $125.08 purchase."
     }
   ],
   "next_best_actions": {
@@ -58,28 +49,28 @@
       {
         "action": "VERIFY_WITH_CUSTOMER",
         "route": "auto",
-        "reason": "R1: verify before blocking on weak/single signal where assessed fraud probability < 0.70"
+        "reason": "R1: score 0.52 is low; verify before blocking"
       }
     ],
     "final": [
       {
         "action": "CLOSE_NO_FRAUD",
         "route": "auto",
-        "reason": "R3: customer confirmed legitimate transaction; close alert with no fraud"
+        "reason": "R3: customer confirmed purchase; close alert without block"
       }
     ],
-    "what_changed": "Customer verification (confirmed) shifted probability and updated recommended intervention."
+    "what_changed": "Customer verified purchase, clearing alert under Policy R3."
   },
   "sar": {
     "file": false,
-    "reason": "Policy R1/R3: Exposure below threshold or false alarm confirmed by cardholder",
+    "reason": "Policy R3: confirmed legitimate cardholder transaction",
     "narrative": "",
     "subjects": [],
-    "total_amount_usd": 0.0,
+    "total_amount_usd": 0,
     "activity_dates": []
   },
-  "stop_reason": "Customer verification response settled the question and policy actions selected.",
-  "tool_calls": 7,
-  "tokens": 4250,
-  "latency_s": 0.42
+  "stop_reason": "Customer confirmed purchase legitimacy.",
+  "tool_calls": 6,
+  "tokens": 3760,
+  "latency_s": 0.45
 }

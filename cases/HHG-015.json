@@ -4,33 +4,28 @@
     "status": "escalated",
     "verdict": "uncertain",
     "fraud_probability": 0.77,
-    "pattern": "none",
+    "pattern": "card_not_present_fraud",
     "pattern_description": "",
-    "affected_txn_ids": [],
-    "first_suspicious_txn_id": "",
+    "affected_txn_ids": [
+      "3464869"
+    ],
+    "first_suspicious_txn_id": "3464869",
     "connected_card_ids": [],
-    "connected_device_profiles": [],
-    "exposure_usd": 0.0,
+    "connected_device_profiles": [
+      "Trident/7.0 | Windows 8.1 | ie 11.0 for desktop | 1680x1050"
+    ],
+    "exposure_usd": 599.94,
     "evidence": [
       {
-        "claim": "Flagged transaction 3464869 scored at 0.77 (Real-time model scored transaction 3464869 ($599.94, online)...)",
+        "claim": "Transaction 3464869 scored 0.77 online with exposure of $599.94",
         "source": "graph",
-        "ref": "query:transaction_window(txn_id=3464869)",
+        "ref": "query:card_window(card_id=C03042-K1, hours=24)",
         "entity_ids": [
           "3464869"
         ]
       },
       {
-        "claim": "Card C03042-K1 associated with customer C03042 and verified account history",
-        "source": "graph",
-        "ref": "query:customer_summary(customer_id=C03042)",
-        "entity_ids": [
-          "C03042",
-          "C03042-K1"
-        ]
-      },
-      {
-        "claim": "Verification response: No reply within 24 hours.",
+        "claim": "Cardholder verification timed out after 24 hours with no reply",
         "source": "customer",
         "ref": "evidence_request:1",
         "entity_ids": [
@@ -39,10 +34,10 @@
       }
     ],
     "similar_prior_cases": [
-      "CC-0003",
-      "CC-0009"
+      "CC-0004",
+      "CC-0008"
     ],
-    "summary": "Case HHG-015: Real-time model scored transaction 3464869 ($599.94, online) at 0.77. Review and decide.. Customer verification concluded uncertain. Applied policy rules.",
+    "summary": "Case HHG-015: Transaction 3464869 ($599.94) scored 0.77. Cardholder did not reply within 24 hours. Because exposure exceeds $500, escalated to analyst under Policy R4/R8.",
     "written_to_graph": true,
     "graph_case_id": "CASE-TG-HHG-015"
   },
@@ -50,7 +45,7 @@
     {
       "type": "customer_validation",
       "asked_after_step": 3,
-      "assumed_response": "No reply within 24 hours."
+      "assumed_response": "No customer reply received within 24-hour verification window."
     }
   ],
   "next_best_actions": {
@@ -58,43 +53,43 @@
       {
         "action": "DECLINE_TRANSACTION",
         "route": "L1",
-        "reason": "R1 & R4: decline pending authorization pending customer confirmation"
+        "reason": "R4: pending customer verification, decline authorization for $599.94"
       },
       {
-        "action": "VERIFY_WITH_CUSTOMER",
+        "action": "MONITOR_CARD",
         "route": "auto",
-        "reason": "R1: verify transaction authorization with customer before blocking card"
+        "reason": "R4: raise card monitoring sensitivity pending cardholder contact"
       }
     ],
     "final": [
       {
         "action": "MONITOR_CARD",
         "route": "auto",
-        "reason": "R4: no customer reply within 24h; raise monitoring sensitivity"
+        "reason": "R4: customer did not respond within 24 hours; maintain elevated monitoring"
       },
       {
         "action": "DECLINE_TRANSACTION",
         "route": "L1",
-        "reason": "R4: decline pending authorization while waiting for customer"
+        "reason": "R4: decline pending authorization"
       },
       {
         "action": "ESCALATE_TO_ANALYST",
         "route": "auto",
-        "reason": "R4: exposure exceeds $500 with unverified customer status"
+        "reason": "R4 & R8: customer verification timed out and exposure ($599.94) exceeds $500 threshold"
       }
     ],
-    "what_changed": "Customer verification (timeout) shifted probability and updated recommended intervention."
+    "what_changed": "Customer timeout after 24 hours with exposure of $599.94 (> $500) triggered mandatory human escalation under Policy R4 and R8."
   },
   "sar": {
     "file": false,
-    "reason": "Policy R1/R3: Exposure below threshold or false alarm confirmed by cardholder",
+    "reason": "Policy R8: verdict uncertain pending human analyst review",
     "narrative": "",
     "subjects": [],
-    "total_amount_usd": 0.0,
+    "total_amount_usd": 0,
     "activity_dates": []
   },
-  "stop_reason": "Customer verification response settled the question and policy actions selected.",
-  "tool_calls": 7,
-  "tokens": 4250,
-  "latency_s": 0.42
+  "stop_reason": "Customer verification timed out and exposure exceeds $500 threshold; escalated to human fraud analyst under R8.",
+  "tool_calls": 6,
+  "tokens": 3760,
+  "latency_s": 0.45
 }

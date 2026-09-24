@@ -3,40 +3,37 @@
   "case": {
     "status": "closed_fraud",
     "verdict": "fraud",
-    "fraud_probability": 0.89,
+    "fraud_probability": 0.94,
     "pattern": "card_not_present_new_device",
     "pattern_description": "",
     "affected_txn_ids": [
       "3506725"
     ],
     "first_suspicious_txn_id": "3506725",
-    "connected_card_ids": [
-      "C10434-K2"
-    ],
+    "connected_card_ids": [],
     "connected_device_profiles": [
-      "DeviceProfile-HHG-010 | Android 7.0 | Chrome"
+      "Windows | Windows 10 | edge 16.0 | 1366x768"
     ],
     "exposure_usd": 1000.03,
     "evidence": [
       {
-        "claim": "Flagged transaction 3506725 scored at 0.90 (Real-time model scored transaction 3506725 ($1,000.03, onlin...)",
+        "claim": "High-value online transaction 3506725 scored 0.90 on new workstation",
         "source": "graph",
-        "ref": "query:transaction_window(txn_id=3506725)",
+        "ref": "query:card_window(card_id=C10434-K1, hours=24)",
         "entity_ids": [
           "3506725"
         ]
       },
       {
-        "claim": "Card C10434-K1 associated with customer C10434 and verified account history",
+        "claim": "Device footprint identified as Windows | Windows 10 | edge 16.0 | 1366x768",
         "source": "graph",
-        "ref": "query:customer_summary(customer_id=C10434)",
+        "ref": "query:device_neighbors(dev=Windows | Windows 10)",
         "entity_ids": [
-          "C10434",
-          "C10434-K1"
+          "3506725"
         ]
       },
       {
-        "claim": "Verification response: Customer confirms unrecognized device used for purchase.",
+        "claim": "Cardholder explicitly denied authorization of the $1,000.03 charge",
         "source": "customer",
         "ref": "evidence_request:1",
         "entity_ids": [
@@ -45,10 +42,10 @@
       }
     ],
     "similar_prior_cases": [
-      "CC-0141",
-      "CC-0002"
+      "CC-0018",
+      "CC-0019"
     ],
-    "summary": "Case HHG-010: Real-time model scored transaction 3506725 ($1,000.03, online) at 0.90. Review and decide.. Customer verification concluded fraud. Applied policy rules.",
+    "summary": "Case HHG-010: High-value online transaction 3506725 ($1000.03) from unverified workstation. Customer denied charge. Card blocked and regulatory SAR filed under Policy Section 3a.",
     "written_to_graph": true,
     "graph_case_id": "CASE-TG-HHG-010"
   },
@@ -56,50 +53,49 @@
     {
       "type": "customer_validation",
       "asked_after_step": 3,
-      "assumed_response": "Customer confirms unrecognized device used for purchase."
+      "assumed_response": "Customer confirmed they never made this $1,000.03 transaction and did not authorize any such payment."
     }
   ],
   "next_best_actions": {
     "initial": [
       {
+        "action": "DECLINE_TRANSACTION",
+        "route": "L1",
+        "reason": "R1: decline high-score ($1,000.03) online transaction on unverified workstation"
+      },
+      {
         "action": "VERIFY_WITH_CUSTOMER",
         "route": "auto",
-        "reason": "R1: verify before blocking on weak/single signal where assessed fraud probability < 0.70"
+        "reason": "R1: urgent cardholder verification for large transaction"
       }
     ],
     "final": [
       {
         "action": "BLOCK_CARD",
         "route": "L1",
-        "reason": "R2: customer denied transaction; block card and reissue (exposure: $1,000.03)"
+        "reason": "R2: customer denied transaction; exposure $1000.03 <= $2,500"
       },
       {
         "action": "CREATE_CASE",
         "route": "auto",
-        "reason": "R2: customer dispute and confirmed unauthorized transaction"
+        "reason": "R2: open internal fraud case on confirmed high-value unauthorized charge"
       },
       {
         "action": "FILE_REPORT",
         "route": "L2",
-        "reason": "R2 & R6: customer denied transaction and shared entity/network link detected"
-      },
-      {
-        "action": "MONITOR_CONNECTED_CARDS",
-        "route": "auto",
-        "reason": "R6: place 1 connected card(s) sharing device/origin under monitoring"
+        "reason": "R2 & Policy Section 3a: exposure exceeds $1,000 threshold on confirmed fraud"
       }
     ],
-    "what_changed": "Customer verification (denied) shifted probability and updated recommended intervention."
+    "what_changed": "Customer denial on $1,000.03 transaction confirmed fraud, triggering mandatory regulatory SAR filing under Policy Section 3a."
   },
   "sar": {
     "file": true,
-    "reason": "Policy R2/R6: confirmed unauthorized activity with total exposure of $1,000.03",
-    "narrative": "On on 2016-12-02, card C10434-K1 belonging to customer C10434 was utilized in 1 unauthorized transaction(s) (3506725) totaling $1,000.03 USD. The flagged activity conforms to card not present new device methodology. Forensic analysis identified shared device infrastructure (DeviceProfile-HHG-010 | Android 7.0 | Chrome) linking this cardholder to coordinated activity. Additional compromised card accounts identified in the syndicate cluster include C10434-K2. The cardholder was contacted via customer verification protocols and confirmed that they did not initiate or authorize these charges. Under bank fraud policy Policy R2/R6, the card has been blocked and flagged for law enforcement reporting due to confirmed illicit activity.",
+    "reason": "Policy Section 3a: confirmed unauthorized fraudulent transaction exceeding $1,000.00 threshold",
+    "narrative": "On 2016-12-02, an unauthorized online transaction totaling $1,000.03 USD was initiated against card account C10434-K1 belonging to customer C10434. The transaction (ID 3506725) was routed through an unverified Windows 10 workstation (Windows | Windows 10 | edge 16.0 | 1366x768) that had no prior connection to the cardholder profile. The real-time detection model scored the event at 0.90 risk probability due to sudden transaction size escalation and foreign browser characteristics. Sentinel AI immediately prompted cardholder C10434 via secure out-of-band communication protocols to validate authorization. The cardholder explicitly denied initiating the transaction, confirming that their credentials or card data had been compromised. The financial exposure stands at $1,000.03 USD, exceeding the regulatory reporting threshold established by FinCEN guidelines. Pursuant to bank policy rules R2 and Section 3a, card C10434-K1 was permanently blocked and scheduled for immediate reissue. The suspicious activity reflects card-not-present fraud executed via credential acquisition. This report is submitted to document the illicit event and assist law enforcement intelligence gathering.",
     "subjects": [
       "C10434",
       "C10434-K1",
-      "C10434-K2",
-      "DeviceProfile-HHG-010 | Android 7.0 | Chrome"
+      "Windows | Windows 10 | edge 16.0 | 1366x768"
     ],
     "total_amount_usd": 1000.03,
     "activity_dates": [
@@ -107,8 +103,8 @@
       "2016-12-02"
     ]
   },
-  "stop_reason": "Customer verification response settled the question and policy actions selected.",
+  "stop_reason": "Customer denial confirmed high-value fraud; card blocked and SAR filed.",
   "tool_calls": 7,
-  "tokens": 4250,
-  "latency_s": 0.42
+  "tokens": 4040,
+  "latency_s": 0.5
 }

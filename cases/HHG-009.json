@@ -1,42 +1,27 @@
 {
   "case_id": "HHG-009",
   "case": {
-    "status": "closed_fraud",
-    "verdict": "fraud",
-    "fraud_probability": 0.92,
-    "pattern": "card_not_present_fraud",
+    "status": "closed_legitimate",
+    "verdict": "legitimate",
+    "fraud_probability": 0.18,
+    "pattern": "none",
     "pattern_description": "",
-    "affected_txn_ids": [
-      "3581141"
-    ],
-    "first_suspicious_txn_id": "3581141",
-    "connected_card_ids": [
-      "C08299-K2"
-    ],
-    "connected_device_profiles": [
-      "DeviceProfile-HHG-009 | Android 7.0 | Chrome"
-    ],
-    "exposure_usd": 30.02,
+    "affected_txn_ids": [],
+    "first_suspicious_txn_id": "",
+    "connected_card_ids": [],
+    "connected_device_profiles": [],
+    "exposure_usd": 0.0,
     "evidence": [
       {
-        "claim": "Flagged transaction 3581141 scored at 0.70 (Customer C08299 message: 'I never made this $30.02 purchase....)",
+        "claim": "Transaction 3581141 ($30.02) matches historical monthly recurring billing amount",
         "source": "graph",
-        "ref": "query:transaction_window(txn_id=3581141)",
+        "ref": "query:card_window(card_id=C08299-K1, hours=720)",
         "entity_ids": [
           "3581141"
         ]
       },
       {
-        "claim": "Card C08299-K1 associated with customer C08299 and verified account history",
-        "source": "graph",
-        "ref": "query:customer_summary(customer_id=C08299)",
-        "entity_ids": [
-          "C08299",
-          "C08299-K1"
-        ]
-      },
-      {
-        "claim": "Verification response: Customer states they did not initiate this charge and card is in possession.",
+        "claim": "Cardholder recognized ongoing service subscription",
         "source": "customer",
         "ref": "evidence_request:1",
         "entity_ids": [
@@ -45,10 +30,10 @@
       }
     ],
     "similar_prior_cases": [
-      "CC-0141",
-      "CC-0002"
+      "CC-0017",
+      "CC-0003"
     ],
-    "summary": "Case HHG-009: Customer C08299 message: 'I never made this $30.02 purchase. Please check my card.' Refers to 3581141.. Customer verification concluded fraud. Applied policy rules.",
+    "summary": "Case HHG-009: Customer C08299 questioned $30.02 transaction. Graph history matched prior recurring billing intervals. Customer recognized subscription. Closed under Policy R7.",
     "written_to_graph": true,
     "graph_case_id": "CASE-TG-HHG-009"
   },
@@ -56,59 +41,46 @@
     {
       "type": "customer_validation",
       "asked_after_step": 3,
-      "assumed_response": "Customer states they did not initiate this charge and card is in possession."
+      "assumed_response": "Customer realized this charge was their recurring digital subscription renewal."
     }
   ],
   "next_best_actions": {
     "initial": [
       {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "R7: customer dispute received on recurring pattern; open review case"
+      },
+      {
         "action": "VERIFY_WITH_CUSTOMER",
         "route": "auto",
-        "reason": "R1: verify before blocking on weak/single signal where assessed fraud probability < 0.70"
+        "reason": "R7: check if transaction matches ongoing recurring service subscription"
       }
     ],
     "final": [
       {
-        "action": "BLOCK_CARD",
-        "route": "L1",
-        "reason": "R2: customer denied transaction; block card and reissue (exposure: $30.02)"
-      },
-      {
-        "action": "CREATE_CASE",
+        "action": "CLOSE_NO_FRAUD",
         "route": "auto",
-        "reason": "R2: customer dispute and confirmed unauthorized transaction"
+        "reason": "R3 & R7: customer acknowledged recurring charge; close case without blocking card"
       },
       {
-        "action": "FILE_REPORT",
-        "route": "L2",
-        "reason": "R2 & R6: customer denied transaction and shared entity/network link detected"
-      },
-      {
-        "action": "MONITOR_CONNECTED_CARDS",
+        "action": "WARN_CUSTOMER",
         "route": "auto",
-        "reason": "R6: place 1 connected card(s) sharing device/origin under monitoring"
+        "reason": "R7: remind customer regarding recurring digital subscription terms"
       }
     ],
-    "what_changed": "Customer verification (denied) shifted probability and updated recommended intervention."
+    "what_changed": "Customer acknowledged charge as their legitimate monthly subscription renewal, resolving dispute under Policy R7."
   },
   "sar": {
-    "file": true,
-    "reason": "Policy R2/R6: confirmed unauthorized activity with total exposure of $30.02",
-    "narrative": "On on 2016-12-28, card C08299-K1 belonging to customer C08299 was utilized in 1 unauthorized transaction(s) (3581141) totaling $30.02 USD. The flagged activity conforms to card not present fraud methodology. Forensic analysis identified shared device infrastructure (DeviceProfile-HHG-009 | Android 7.0 | Chrome) linking this cardholder to coordinated activity. Additional compromised card accounts identified in the syndicate cluster include C08299-K2. The cardholder was contacted via customer verification protocols and confirmed that they did not initiate or authorize these charges. Under bank fraud policy Policy R2/R6, the card has been blocked and flagged for law enforcement reporting due to confirmed illicit activity.",
-    "subjects": [
-      "C08299",
-      "C08299-K1",
-      "C08299-K2",
-      "DeviceProfile-HHG-009 | Android 7.0 | Chrome"
-    ],
-    "total_amount_usd": 30.02,
-    "activity_dates": [
-      "2016-12-28",
-      "2016-12-28"
-    ]
+    "file": false,
+    "reason": "Policy R7: legitimate recurring merchant charge recognized by cardholder",
+    "narrative": "",
+    "subjects": [],
+    "total_amount_usd": 0,
+    "activity_dates": []
   },
-  "stop_reason": "Customer verification response settled the question and policy actions selected.",
-  "tool_calls": 7,
-  "tokens": 4250,
-  "latency_s": 0.42
+  "stop_reason": "Customer confirmed recurring subscription origin; case resolved with no block.",
+  "tool_calls": 6,
+  "tokens": 3760,
+  "latency_s": 0.45
 }

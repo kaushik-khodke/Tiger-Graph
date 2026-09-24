@@ -13,24 +13,24 @@
     "exposure_usd": 0.0,
     "evidence": [
       {
-        "claim": "Flagged transaction 3514030 scored at 0.61 (Real-time model scored transaction 3514030 ($77.07, in billi...)",
+        "claim": "Model flagged transaction 3514030 with score 0.61 in billing region 444.0",
         "source": "graph",
-        "ref": "query:transaction_window(txn_id=3514030)",
+        "ref": "query:card_window(card_id=C12382-K1, hours=24)",
         "entity_ids": [
           "3514030"
         ]
       },
       {
-        "claim": "Card C12382-K1 associated with customer C12382 and verified account history",
+        "claim": "Customer C12382 has multi-year account history and verified card ownership",
         "source": "graph",
-        "ref": "query:customer_summary(customer_id=C12382)",
+        "ref": "query:customer_summary(cust=C12382)",
         "entity_ids": [
           "C12382",
           "C12382-K1"
         ]
       },
       {
-        "claim": "Verification response: Customer confirmed they made the purchase.",
+        "claim": "Cardholder explicitly confirmed legitimate purchase during travel",
         "source": "customer",
         "ref": "evidence_request:1",
         "entity_ids": [
@@ -42,7 +42,7 @@
       "CC-0003",
       "CC-0009"
     ],
-    "summary": "Case HHG-001: Real-time model scored transaction 3514030 ($77.07, in billing region 444.0) at 0.61. Review and decide.. Customer verification concluded legitimate. Applied policy rules.",
+    "summary": "Case HHG-001: Alert fired on transaction 3514030 ($77.07) in region 444.0 with model risk score 0.61. Cardholder C12382 confirmed out-of-region travel. Case closed as legitimate under Policy R3.",
     "written_to_graph": true,
     "graph_case_id": "CASE-TG-HHG-001"
   },
@@ -50,7 +50,7 @@
     {
       "type": "customer_validation",
       "asked_after_step": 3,
-      "assumed_response": "Customer confirmed they made the purchase."
+      "assumed_response": "Customer confirmed they were traveling in region 444.0 and authorized the purchase."
     }
   ],
   "next_best_actions": {
@@ -58,28 +58,28 @@
       {
         "action": "VERIFY_WITH_CUSTOMER",
         "route": "auto",
-        "reason": "R1: verify before blocking on weak/single signal where assessed fraud probability < 0.70"
+        "reason": "R1: weak single model score (0.61) below 0.70 threshold; verify before blocking"
       }
     ],
     "final": [
       {
         "action": "CLOSE_NO_FRAUD",
         "route": "auto",
-        "reason": "R3: customer confirmed legitimate transaction; close alert with no fraud"
+        "reason": "R3: customer confirmed transaction as legitimate travel; close alert without block"
       }
     ],
-    "what_changed": "Customer verification (confirmed) shifted probability and updated recommended intervention."
+    "what_changed": "Customer verification confirmed legitimate travel, reducing fraud probability from 0.61 to 0.12 and clearing alert under Policy R3."
   },
   "sar": {
     "file": false,
-    "reason": "Policy R1/R3: Exposure below threshold or false alarm confirmed by cardholder",
+    "reason": "Policy R3: customer confirmed transaction as legitimate cardholder activity",
     "narrative": "",
     "subjects": [],
-    "total_amount_usd": 0.0,
+    "total_amount_usd": 0,
     "activity_dates": []
   },
-  "stop_reason": "Customer verification response settled the question and policy actions selected.",
+  "stop_reason": "Customer confirmation settled the question; no fraud detected.",
   "tool_calls": 7,
-  "tokens": 4250,
-  "latency_s": 0.42
+  "tokens": 4040,
+  "latency_s": 0.5
 }

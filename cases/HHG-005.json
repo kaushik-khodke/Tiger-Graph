@@ -3,7 +3,7 @@
   "case": {
     "status": "closed_legitimate",
     "verdict": "legitimate",
-    "fraud_probability": 0.12,
+    "fraud_probability": 0.14,
     "pattern": "none",
     "pattern_description": "",
     "affected_txn_ids": [],
@@ -13,24 +13,15 @@
     "exposure_usd": 0.0,
     "evidence": [
       {
-        "claim": "Flagged transaction 3523199 scored at 0.54 (Real-time model scored transaction 3523199 ($100.07, online)...)",
+        "claim": "Model flagged transaction 3523199 with score 0.54",
         "source": "graph",
-        "ref": "query:transaction_window(txn_id=3523199)",
+        "ref": "query:card_window(card_id=C02923-K1, hours=12)",
         "entity_ids": [
           "3523199"
         ]
       },
       {
-        "claim": "Card C02923-K1 associated with customer C02923 and verified account history",
-        "source": "graph",
-        "ref": "query:customer_summary(customer_id=C02923)",
-        "entity_ids": [
-          "C02923",
-          "C02923-K1"
-        ]
-      },
-      {
-        "claim": "Verification response: Customer confirmed they made the purchase.",
+        "claim": "Cardholder confirmed transaction as legitimate",
         "source": "customer",
         "ref": "evidence_request:1",
         "entity_ids": [
@@ -39,10 +30,10 @@
       }
     ],
     "similar_prior_cases": [
-      "CC-0003",
-      "CC-0009"
+      "CC-0010",
+      "CC-0015"
     ],
-    "summary": "Case HHG-005: Real-time model scored transaction 3523199 ($100.07, online) at 0.54. Review and decide.. Customer verification concluded legitimate. Applied policy rules.",
+    "summary": "Case HHG-005: Real-time model scored transaction 3523199 ($100.07) at 0.54. Cardholder C02923 confirmed purchase from their tablet. Closed as legitimate under Policy R3.",
     "written_to_graph": true,
     "graph_case_id": "CASE-TG-HHG-005"
   },
@@ -50,7 +41,7 @@
     {
       "type": "customer_validation",
       "asked_after_step": 3,
-      "assumed_response": "Customer confirmed they made the purchase."
+      "assumed_response": "Customer verified they made the purchase from their iPad device."
     }
   ],
   "next_best_actions": {
@@ -58,28 +49,28 @@
       {
         "action": "VERIFY_WITH_CUSTOMER",
         "route": "auto",
-        "reason": "R1: verify before blocking on weak/single signal where assessed fraud probability < 0.70"
+        "reason": "R1: model score 0.54 is low/moderate; verify before blocking"
       }
     ],
     "final": [
       {
         "action": "CLOSE_NO_FRAUD",
         "route": "auto",
-        "reason": "R3: customer confirmed legitimate transaction; close alert with no fraud"
+        "reason": "R3: customer confirmed charge; close alert as false alarm"
       }
     ],
-    "what_changed": "Customer verification (confirmed) shifted probability and updated recommended intervention."
+    "what_changed": "Customer verified purchase from their registered tablet device, clearing the alert."
   },
   "sar": {
     "file": false,
-    "reason": "Policy R1/R3: Exposure below threshold or false alarm confirmed by cardholder",
+    "reason": "Policy R3: confirmed legitimate cardholder purchase",
     "narrative": "",
     "subjects": [],
-    "total_amount_usd": 0.0,
+    "total_amount_usd": 0,
     "activity_dates": []
   },
-  "stop_reason": "Customer verification response settled the question and policy actions selected.",
-  "tool_calls": 7,
-  "tokens": 4250,
-  "latency_s": 0.42
+  "stop_reason": "Customer confirmation confirmed legitimate purchase; case resolved.",
+  "tool_calls": 6,
+  "tokens": 3760,
+  "latency_s": 0.45
 }
