@@ -19,7 +19,7 @@ import {
 } from '@/types/sentinel'
 import { Button } from '@/components/ui/button'
 import { LanguageSelector } from '@/components/language-selector'
-import { initGoogleTranslate, setGoogleTranslateLanguage } from '@/lib/translations'
+import { TranslationContext, useTranslation, t, initGoogleTranslate, setGoogleTranslateLanguage } from '@/lib/translations'
 
 const icon = (name: string, props: any = {}) => {
   const I = (Icons as any)[name] || Icons.Circle
@@ -42,15 +42,18 @@ function getFormattedCurrentDate(): string {
 }
 
 function Badge({ children, tone = 'slate' }: { children: React.ReactNode; tone?: string }) {
-  return <span className={`badge badge-${tone}`}>{children}</span>
+  const { t } = useTranslation()
+  const content = typeof children === 'string' ? t(children) : children
+  return <span className={`badge badge-${tone}`}>{content}</span>
 }
 
 function SectionTitle({ eyebrow, title, action }: { eyebrow?: string; title: string; action?: React.ReactNode }) {
+  const { t } = useTranslation()
   return (
     <div className="section-title">
       <div>
-        {eyebrow && <div className="eyebrow">{eyebrow}</div>}
-        <h2>{title}</h2>
+        {eyebrow && <div className="eyebrow">{t(eyebrow)}</div>}
+        <h2>{t(title)}</h2>
       </div>
       {action}
     </div>
@@ -60,17 +63,18 @@ function SectionTitle({ eyebrow, title, action }: { eyebrow?: string; title: str
 function Sidebar({ collapsed, setCollapsed, metrics }: { collapsed: boolean; setCollapsed: (v: boolean) => void; metrics?: CaseMetrics | null }) {
   const path = usePathname()
   const router = useRouter()
+  const { t } = useTranslation()
 
   const navItems = [
-    ['Dashboard', 'LayoutDashboard', '/dashboard'],
-    ['Investigations', 'Radar', '/investigations'],
-    ['Cases', 'BriefcaseBusiness', '/cases'],
-    ['Graph Explorer', 'Share2', '/graph'],
-    ['Approvals', 'BadgeCheck', '/approvals'],
-    ['Case Memory', 'Library', '/memory'],
-    ['Audit Log', 'ScrollText', '/audit'],
-    ['Benchmark', 'ChartNoAxesCombined', '/benchmark'],
-    ['Settings', 'Settings2', '/settings'],
+    [t('Dashboard'), 'LayoutDashboard', '/dashboard'],
+    [t('Investigations'), 'Radar', '/investigations'],
+    [t('Cases'), 'BriefcaseBusiness', '/cases'],
+    [t('Graph Explorer'), 'Share2', '/graph'],
+    [t('Approvals'), 'BadgeCheck', '/approvals'],
+    [t('Case Memory'), 'Library', '/memory'],
+    [t('Audit Log'), 'ScrollText', '/audit'],
+    [t('Benchmark'), 'ChartNoAxesCombined', '/benchmark'],
+    [t('Settings'), 'Settings2', '/settings'],
   ]
 
   const activeCount = metrics ? String(metrics.active_investigations) : '—'
@@ -134,8 +138,8 @@ function Sidebar({ collapsed, setCollapsed, metrics }: { collapsed: boolean; set
           >
             <span className="nav-icon">{icon(ico)}</span>
             <span className="nav-label">{label}</span>
-            {['Investigations', 'Approvals'].includes(label) && (
-              <em className="nav-badge">{label === 'Investigations' ? activeCount : approvalCount}</em>
+            {['/investigations', '/approvals'].includes(href) && (
+              <em className="nav-badge">{href === '/investigations' ? activeCount : approvalCount}</em>
             )}
           </button>
         ))}
@@ -163,6 +167,7 @@ function Header({
   lang: string
   onSelectLang: (lang: string) => void
 }) {
+  const { t } = useTranslation()
   return (
     <header className="topbar">
       <div className="mobile-brand" onClick={onToggleSidebar} style={{ cursor: 'pointer' }}>
@@ -171,7 +176,7 @@ function Header({
       </div>
       <div className="global-search">
         {icon('Search')}
-        <input placeholder="Search case, investigation, customer, device..." onChange={(e) => onSearch(e.target.value)} />
+        <input placeholder={t('Search case, investigation, customer, device...')} onChange={(e) => onSearch(e.target.value)} />
         <kbd>⌘ K</kbd>
       </div>
       <div className="top-actions">
@@ -188,7 +193,7 @@ function Header({
         <div className="system">
           <span className="pulse" />
           <div>
-            <strong>AI Engine Online</strong>
+            <strong>{t('AI Engine Online')}</strong>
             <small>{systemStatus || 'Operational Status: Normal'}</small>
           </div>
         </div>
@@ -198,33 +203,34 @@ function Header({
 }
 
 function MetricCards({ metrics }: { metrics: CaseMetrics | null }) {
+  const { t } = useTranslation()
   const stats = [
     {
-      label: 'ACTIVE INVESTIGATIONS',
+      label: t('ACTIVE INVESTIGATIONS'),
       value: metrics ? String(metrics.active_investigations) : '21',
       change: metrics?.active_change || '+100%',
       icon: 'Radar'
     },
     {
-      label: 'AWAITING EVIDENCE',
+      label: t('AWAITING EVIDENCE'),
       value: metrics ? String(metrics.awaiting_evidence).padStart(2, '0') : '01',
       change: metrics?.awaiting_change || '1 require review',
       icon: 'FileSearch'
     },
     {
-      label: 'PENDING APPROVALS',
+      label: t('PENDING APPROVALS'),
       value: metrics ? String(metrics.pending_approvals).padStart(2, '0') : '03',
       change: metrics?.pending_change || '3 in queue',
       icon: 'BadgeCheck'
     },
     {
-      label: 'ESCALATIONS',
+      label: t('ESCALATIONS'),
       value: metrics ? String(metrics.escalations).padStart(2, '0') : '00',
       change: metrics?.escalations_change || '0 active',
       icon: 'ArrowUpRight'
     },
     {
-      label: 'RESOLVED TODAY',
+      label: t('RESOLVED TODAY'),
       value: metrics ? String(metrics.resolved_today) : '0',
       change: metrics?.resolved_change || '+0%',
       icon: 'CircleCheck'
@@ -251,6 +257,7 @@ function MetricCards({ metrics }: { metrics: CaseMetrics | null }) {
 
 function InvestigationTable({ cases, compact = false }: { cases: CaseListItem[]; compact?: boolean }) {
   const router = useRouter()
+  const { t } = useTranslation()
   const displayCases = compact ? cases.slice(0, 5) : cases.slice(0, 10)
 
   return (
@@ -258,16 +265,16 @@ function InvestigationTable({ cases, compact = false }: { cases: CaseListItem[];
       <table>
         <thead>
           <tr>
-            <th>Case</th>
-            <th>Trigger</th>
-            <th>Customer</th>
-            <th>Amount</th>
-            <th>Risk</th>
-            <th>Confidence</th>
-            <th>Evidence</th>
-            <th>Status</th>
-            <th>NBA</th>
-            <th>Updated</th>
+            <th>{t('Case')}</th>
+            <th>{t('Trigger')}</th>
+            <th>{t('Customer')}</th>
+            <th>{t('Amount')}</th>
+            <th>{t('Risk')}</th>
+            <th>{t('Confidence')}</th>
+            <th>{t('Evidence')}</th>
+            <th>{t('Status')}</th>
+            <th>{t('NBA')}</th>
+            <th>{t('Updated')}</th>
           </tr>
         </thead>
         <tbody>
@@ -291,7 +298,7 @@ function InvestigationTable({ cases, compact = false }: { cases: CaseListItem[];
                   {row.confidence}%
                 </div>
               </td>
-              <td>{row.evidence} items</td>
+              <td>{row.evidence} {t('items')}</td>
               <td>
                 <Badge
                   tone={
@@ -324,17 +331,18 @@ function InvestigationTable({ cases, compact = false }: { cases: CaseListItem[];
 
 function Dashboard({ cases, metrics, auditEvents }: { cases: CaseListItem[]; metrics: CaseMetrics | null; auditEvents: AuditLogItem[] }) {
   const router = useRouter()
+  const { t } = useTranslation()
 
   return (
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">OPERATIONS OVERVIEW · {getFormattedCurrentDate()}</div>
-          <h1>Sentinel — Fraud Operations</h1>
-          <p>Professional investigation, evidence and next-best-action.</p>
+          <div className="eyebrow">{t('OPERATIONS OVERVIEW')} · {getFormattedCurrentDate()}</div>
+          <h1>{t('Sentinel — Fraud Operations')}</h1>
+          <p>{t('Professional investigation, evidence and next-best-action.')}</p>
         </div>
         <Button onClick={() => router.push('/investigations/CASE-10293')}>
-          <Icons.Plus data-icon="inline-start" /> Start investigation
+          <Icons.Plus data-icon="inline-start" /> {t('Start investigation')}
         </Button>
       </div>
 
@@ -343,10 +351,10 @@ function Dashboard({ cases, metrics, auditEvents }: { cases: CaseListItem[]; met
       <div className="content-grid dashboard-grid">
         <section className="panel span-2">
           <SectionTitle
-            title="Priority Investigations"
+            title={t('Priority Investigations')}
             action={
               <Button variant="ghost" size="sm" onClick={() => router.push('/investigations')} style={{ color: 'var(--primary)', fontWeight: 600 }}>
-                View queue {icon('ChevronRight')}
+                {t('View queue')} {icon('ChevronRight')}
               </Button>
             }
           />
@@ -355,8 +363,8 @@ function Dashboard({ cases, metrics, auditEvents }: { cases: CaseListItem[]; met
 
         <section className="panel activity">
           <SectionTitle
-            title="AI investigation activity"
-            action={<span className="live"><i /> Live</span>}
+            title={t('AI investigation activity')}
+            action={<span className="live"><i /> {t('Live')}</span>}
           />
           <div className="activity-list">
             {auditEvents.slice(0, 6).map((x, i) => {
@@ -384,7 +392,7 @@ function Dashboard({ cases, metrics, auditEvents }: { cases: CaseListItem[]; met
       </div>
 
       <section style={{ marginTop: '20px' }}>
-        <SectionTitle eyebrow="REVIEW QUEUE" title="Priority cases" />
+        <SectionTitle eyebrow={t('REVIEW QUEUE')} title={t('Priority cases')} />
         <div className="case-cards">
           {cases.slice(0, 3).map((c) => (
             <div className="case-card" key={c.id}>
@@ -395,11 +403,11 @@ function Dashboard({ cases, metrics, auditEvents }: { cases: CaseListItem[]; met
               <strong className="notranslate" translate="no">{c.id}</strong>
               <p>{c.trigger}</p>
               <div className="case-meta">
-                <span>{icon('FileText')} {c.evidence} evidence</span>
-                <span>{icon('Target')} {c.confidence}% confidence</span>
+                <span>{icon('FileText')} {c.evidence} {t('evidence')}</span>
+                <span>{icon('Target')} {c.confidence}% {t('confidence')}</span>
               </div>
               <Button variant="outline" size="sm" onClick={() => router.push('/investigations/' + c.id)}>
-                Open case {icon('ArrowUpRight')}
+                {t('Open case')} {icon('ArrowUpRight')}
               </Button>
             </div>
           ))}
@@ -411,6 +419,7 @@ function Dashboard({ cases, metrics, auditEvents }: { cases: CaseListItem[]; met
 
 function Queue({ cases, metrics }: { cases: CaseListItem[]; metrics?: CaseMetrics | null }) {
   const router = useRouter()
+  const { t: translate } = useTranslation()
   const [tab, setTab] = useState('All')
   const [search, setSearch] = useState('')
   const [riskFilter, setRiskFilter] = useState('All')
@@ -444,12 +453,12 @@ function Queue({ cases, metrics }: { cases: CaseListItem[]; metrics?: CaseMetric
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">INVESTIGATION QUEUE</div>
-          <h1>Investigations</h1>
-          <p>Monitor agent-led investigations and decision readiness across all benchmark cases.</p>
+          <div className="eyebrow">{translate('INVESTIGATION QUEUE')}</div>
+          <h1>{translate('Investigations')}</h1>
+          <p>{translate('Monitor agent-led investigations and decision readiness across all benchmark cases.')}</p>
         </div>
         <Button onClick={() => router.push('/investigations/CASE-10293')}>
-          <Icons.Plus data-icon="inline-start" /> Start investigation
+          <Icons.Plus data-icon="inline-start" /> {translate('Start investigation')}
         </Button>
       </div>
 
@@ -457,27 +466,27 @@ function Queue({ cases, metrics }: { cases: CaseListItem[]; metrics?: CaseMetric
         <div className="field-search">
           {icon('Search')}
           <input
-            placeholder="Search investigations by ID, customer, transaction..."
+            placeholder={translate('Search case, investigation, customer, device...')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)}>
-          <option value="All">All risk levels</option>
-          <option value="High">High risk (&gt; 80)</option>
+          <option value="All">{translate('All')}</option>
+          <option value="High">{translate('High')}</option>
         </select>
         <Button variant="outline">
-          {icon('SlidersHorizontal')} Filters
+          {icon('SlidersHorizontal')} {translate('Filters')}
         </Button>
       </div>
 
       <div className="tabs">
-        {tabs.map((t) => (
-          <button className={tab === t ? 'selected' : ''} key={t} onClick={() => setTab(t)}>
-            {t}
-            {t === 'Awaiting Approval' && (metrics?.pending_approvals ?? 0) > 0 && <b>{metrics?.pending_approvals}</b>}
-            {t === 'Awaiting Evidence' && (metrics?.awaiting_evidence ?? 0) > 0 && <b>{metrics?.awaiting_evidence}</b>}
-            {t === 'Active' && (metrics?.active_investigations ?? 0) > 0 && <b>{metrics?.active_investigations}</b>}
+        {tabs.map((tItem) => (
+          <button className={tab === tItem ? 'selected' : ''} key={tItem} onClick={() => setTab(tItem)}>
+            {translate(tItem)}
+            {tItem === 'Awaiting Approval' && (metrics?.pending_approvals ?? 0) > 0 && <b>{metrics?.pending_approvals}</b>}
+            {tItem === 'Awaiting Evidence' && (metrics?.awaiting_evidence ?? 0) > 0 && <b>{metrics?.awaiting_evidence}</b>}
+            {tItem === 'Active' && (metrics?.active_investigations ?? 0) > 0 && <b>{metrics?.active_investigations}</b>}
           </button>
         ))}
       </div>
@@ -491,6 +500,7 @@ function Queue({ cases, metrics }: { cases: CaseListItem[]; metrics?: CaseMetric
 
 function CasesPage({ cases, metrics }: { cases: CaseListItem[]; metrics?: CaseMetrics | null }) {
   const router = useRouter()
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [typologyFilter, setTypologyFilter] = useState('All Typologies')
   const [statusFilter, setStatusFilter] = useState('All')
@@ -570,16 +580,16 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">CASE MANAGEMENT &amp; DOSSIER PORTFOLIO</div>
-          <h1>Cases</h1>
-          <p>Comprehensive repository of fraud dossiers, suspicious activity reports (SAR), and enterprise risk outcomes.</p>
+          <div className="eyebrow">{t('CASE MANAGEMENT & DOSSIER PORTFOLIO')}</div>
+          <h1>{t('Cases')}</h1>
+          <p>{t('Comprehensive repository of fraud dossiers, suspicious activity reports (SAR), and enterprise risk outcomes.')}</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <Button variant="outline" onClick={() => setSelectedSarCase(cases[0] || null)}>
-            {icon('FileText')} SAR Template
+            {icon('FileText')} {t('SAR Template')}
           </Button>
           <Button onClick={() => router.push('/investigations/CASE-10293')}>
-            <Icons.Plus data-icon="inline-start" /> New case filing
+            <Icons.Plus data-icon="inline-start" /> {t('New case filing')}
           </Button>
         </div>
       </div>
@@ -588,33 +598,33 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
         <div className="metric-card">
           <div className="metric-icon">{icon('BriefcaseBusiness')}</div>
           <div>
-            <small>Total Dossiers</small>
+            <small>{t('Total Dossiers')}</small>
             <strong>{cases.length}</strong>
-            <span>Active Enterprise Portfolio</span>
+            <span>{t('Active Enterprise Portfolio')}</span>
           </div>
         </div>
         <div className="metric-card">
           <div className="metric-icon" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>{icon('ShieldAlert')}</div>
           <div>
-            <small>High Exposure / SAR</small>
+            <small>{t('High Exposure / SAR')}</small>
             <strong style={{ color: 'var(--red)' }}>{highRiskCount}</strong>
-            <span style={{ color: 'var(--red)' }}>Critical Risk Threshold</span>
+            <span style={{ color: 'var(--red)' }}>{t('Critical Risk Threshold')}</span>
           </div>
         </div>
         <div className="metric-card">
           <div className="metric-icon">{icon('DollarSign')}</div>
           <div>
-            <small>Prevented Exposure</small>
+            <small>{t('Prevented Exposure')}</small>
             <strong>${totalExposure.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
-            <span>Protected Value</span>
+            <span>{t('Protected Value')}</span>
           </div>
         </div>
         <div className="metric-card">
           <div className="metric-icon">{icon('Bot')}</div>
           <div>
-            <small>Graph Resolution</small>
+            <small>{t('Graph Resolution')}</small>
             <strong>100%</strong>
-            <span>TigerGraph Grounded</span>
+            <span>{t('TigerGraph Grounded')}</span>
           </div>
         </div>
       </div>
@@ -623,14 +633,14 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
         <div className="field-search">
           {icon('Search')}
           <input
-            placeholder="Search cases by ID, customer, transaction or typology..."
+            placeholder={t('Search cases by ID, customer, transaction or typology...')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <select value={typologyFilter} onChange={(e) => setTypologyFilter(e.target.value)}>
-          {typologies.map((t) => (
-            <option key={t} value={t}>{t}</option>
+          {typologies.map((item) => (
+            <option key={item} value={item}>{t(item)}</option>
           ))}
         </select>
         <div style={{ display: 'flex', background: 'var(--surface-secondary)', border: '1px solid var(--border)', borderRadius: '6px', overflow: 'hidden' }}>
@@ -650,7 +660,7 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
               fontWeight: 500
             }}
           >
-            {icon('LayoutGrid')} Grid
+            {icon('LayoutGrid')} {t('Grid')}
           </button>
           <button
             type="button"
@@ -668,7 +678,7 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
               fontWeight: 500
             }}
           >
-            {icon('List')} Table
+            {icon('List')} {t('Table')}
           </button>
         </div>
       </div>
@@ -680,7 +690,7 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
             className={statusFilter === s ? 'selected' : ''}
             onClick={() => setStatusFilter(s)}
           >
-            {s}
+            {t(s)}
             {s === 'SAR Recommended' && <b style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)' }}>{highRiskCount}</b>}
           </button>
         ))}
@@ -695,29 +705,29 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
               <div key={c.id} className="dossier-card">
                 <div>
                   <div className="dossier-top">
-                    <span className="dossier-typology">{typology}</span>
+                    <span className="dossier-typology">{t(typology)}</span>
                     <Badge tone={c.risk >= 75 ? 'red' : c.risk >= 60 ? 'amber' : 'green'}>
-                      Risk {c.risk}
+                      {t('Risk')} {c.risk}
                     </Badge>
                   </div>
                   <div className="dossier-body">
                     <h3 className="notranslate" translate="no">{c.id}</h3>
-                    <p>Trigger: {c.trigger}</p>
+                    <p>{t('Trigger')}: {c.trigger}</p>
                     <div className="dossier-metrics">
                       <div>
-                        <span>Customer</span>
+                        <span>{t('Customer')}</span>
                         <strong className="notranslate" translate="no">{c.customer}</strong>
                       </div>
                       <div>
-                        <span>Exposure</span>
+                        <span>{t('Amount')}</span>
                         <strong style={{ color: 'var(--amber)' }} className="notranslate" translate="no">${c.amount.toFixed(2)}</strong>
                       </div>
                       <div>
-                        <span>Evidence Nodes</span>
-                        <strong>{c.evidence} graph artifacts</strong>
+                        <span>{t('Evidence')}</span>
+                        <strong>{c.evidence} {t('items')}</strong>
                       </div>
                       <div>
-                        <span>Confidence</span>
+                        <span>{t('Confidence')}</span>
                         <strong>{c.confidence}%</strong>
                       </div>
                     </div>
@@ -726,9 +736,9 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
 
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', fontSize: '10px', color: 'var(--muted)' }}>
-                    <span>SAR Status:</span>
+                    <span>SAR {t('Status')}:</span>
                     <strong style={{ color: sarStatus === 'SAR Recommended' ? 'var(--red)' : '#ccd4e2' }}>
-                      {sarStatus}
+                      {t(sarStatus)}
                     </strong>
                   </div>
                   <div className="dossier-actions">
@@ -738,14 +748,14 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
                       style={{ flex: 1, fontSize: '11px' }}
                       onClick={() => setSelectedSarCase(c)}
                     >
-                      {icon('FileText')} SAR File
+                      {icon('FileText')} SAR {t('File')}
                     </Button>
                     <Button
                       size="sm"
                       style={{ flex: 1.2, fontSize: '11px' }}
                       onClick={() => router.push('/investigations/' + c.id)}
                     >
-                      Deep Dive {icon('ArrowUpRight')}
+                      {t('Open case')} {icon('ArrowUpRight')}
                     </Button>
                   </div>
                 </div>
@@ -759,31 +769,31 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
             <table>
               <thead>
                 <tr>
-                  <th>Case ID</th>
-                  <th>Typology</th>
-                  <th>Customer</th>
-                  <th>Amount</th>
-                  <th>Risk Score</th>
-                  <th>Confidence</th>
-                  <th>Evidence</th>
-                  <th>SAR Status</th>
-                  <th>NBA Recommendation</th>
-                  <th>Action</th>
+                  <th>{t('Case ID')}</th>
+                  <th>{t('Typology')}</th>
+                  <th>{t('Customer')}</th>
+                  <th>{t('Amount')}</th>
+                  <th>{t('Risk Score')}</th>
+                  <th>{t('Confidence')}</th>
+                  <th>{t('Evidence')}</th>
+                  <th>{t('SAR Status')}</th>
+                  <th>{t('NBA Recommendation')}</th>
+                  <th>{t('Action')}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredCases.map((c) => (
                   <tr key={c.id} onClick={() => router.push('/investigations/' + c.id)}>
                     <td><strong className="notranslate" translate="no">{c.id}</strong><small>{c.updated}</small></td>
-                    <td><span className="dossier-typology">{getCaseTypology(c)}</span></td>
+                    <td><span className="dossier-typology">{t(getCaseTypology(c))}</span></td>
                     <td className="notranslate" translate="no">{c.customer}</td>
                     <td><strong className="notranslate" translate="no">${c.amount.toFixed(2)}</strong></td>
                     <td><span className={`risk ${c.risk >= 75 ? 'risk-high' : c.risk >= 60 ? 'risk-med' : 'risk-low'}`}>{c.risk}</span></td>
                     <td>{c.confidence}%</td>
-                    <td>{c.evidence} items</td>
+                    <td>{c.evidence} {t('items')}</td>
                     <td>
                       <Badge tone={getSarStatus(c) === 'SAR Recommended' ? 'red' : 'slate'}>
-                        {getSarStatus(c)}
+                        {t(getSarStatus(c))}
                       </Badge>
                     </td>
                     <td><small>{c.nba}</small></td>
@@ -883,6 +893,7 @@ function Graph({
   selected: string | null
   setSelected: (s: string | null) => void
 }) {
+  const { t } = useTranslation()
   const [filter, setFilter] = useState('All')
 
   const nodes: GraphNode[] = graphData?.nodes || []
@@ -898,14 +909,14 @@ function Graph({
     <div className="graph-box">
       <div className="graph-toolbar">
         <div>
-          <strong>Relationship graph</strong>
-          <small>{nodes.length} entities · {edges.length} relationships</small>
+          <strong>{t('Relationship graph')}</strong>
+          <small>{nodes.length} {t('entities')} · {edges.length} {t('relationships')}</small>
         </div>
         <div className="graph-tools">
           <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-            <option value="All">All entities</option>
-            <option value="Customers">Customers</option>
-            <option value="Devices">Devices</option>
+            <option value="All">{t('All entities')}</option>
+            <option value="Customers">{t('Customers')}</option>
+            <option value="Devices">{t('Devices')}</option>
           </select>
           <button title="Reset Selection" onClick={() => setSelected(null)}>
             {icon('RotateCcw')}
@@ -970,7 +981,7 @@ function Graph({
         ].map(([c, l]) => (
           <span key={c}>
             <i className={`legend-${c}`} />
-            {l}
+            {t(l)}
           </span>
         ))}
       </div>
@@ -987,11 +998,12 @@ function EvidenceCard({
   onView: () => void
   onProvenance: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className={`evidence-card ${e.tone}`}>
       <div className="evidence-head">
         <Badge tone={e.tone === 'support' ? 'green' : e.tone === 'contradict' ? 'red' : 'slate'}>
-          {e.tone === 'support' ? 'Supporting' : e.tone === 'contradict' ? 'Contradicting' : 'Contextual'}
+          {e.tone === 'support' ? t('Supporting') : e.tone === 'contradict' ? t('Contradicting') : t('Contextual')}
         </Badge>
         <span className="notranslate" translate="no">{e.id}</span>
       </div>
@@ -1005,14 +1017,15 @@ function EvidenceCard({
         {icon('Route')} {e.entities}
       </div>
       <div className="evidence-actions">
-        <button onClick={onView}>View in graph</button>
-        <button onClick={onProvenance}>Provenance {icon('ArrowUpRight')}</button>
+        <button onClick={onView}>{t('View in graph')}</button>
+        <button onClick={onProvenance}>{t('Provenance')} {icon('ArrowUpRight')}</button>
       </div>
     </div>
   )
 }
 
 function InvestigationWorkspace({ caseId }: { caseId: string }) {
+  const { t } = useTranslation()
   const [caseDetail, setCaseDetail] = useState<CaseDetail | null>(null)
   const [graphData, setGraphData] = useState<GraphData | null>(null)
   const [evidenceList, setEvidenceList] = useState<EvidenceItem[]>([])
@@ -1095,7 +1108,7 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
     <>
       <div className="case-header">
         <div>
-          <div className="eyebrow">INVESTIGATION WORKSPACE</div>
+          <div className="eyebrow">{t('INVESTIGATION WORKSPACE')}</div>
           <h1>
             <span className="notranslate" translate="no">{caseDetail.id}</span>{' '}
             <Badge tone={isAwaitingApproval ? 'amber' : requested ? 'red' : 'blue'}>
@@ -1103,44 +1116,44 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
             </Badge>
           </h1>
           <div className="case-summary">
-            <span>Trigger <strong>{toTitleCase(caseDetail.trigger_type)}</strong></span>
-            <span>Customer <strong className="notranslate" translate="no">{caseDetail.customer_id}</strong></span>
-            <span>Transaction <strong className="notranslate" translate="no">{caseDetail.flagged_txn_id}</strong></span>
-            <span>Amount <strong className="notranslate" translate="no">${caseDetail.amount.toFixed(2)}</strong></span>
-            <span>Opened <strong className="notranslate" translate="no">{caseDetail.opened_at}</strong></span>
+            <span>{t('Trigger')} <strong>{toTitleCase(caseDetail.trigger_type)}</strong></span>
+            <span>{t('Customer')} <strong className="notranslate" translate="no">{caseDetail.customer_id}</strong></span>
+            <span>{t('Transaction')} <strong className="notranslate" translate="no">{caseDetail.flagged_txn_id}</strong></span>
+            <span>{t('Amount')} <strong className="notranslate" translate="no">${caseDetail.amount.toFixed(2)}</strong></span>
+            <span>{t('Opened')} <strong className="notranslate" translate="no">{caseDetail.opened_at}</strong></span>
           </div>
         </div>
         <div className="case-actions">
           <Button variant="outline" size="sm" onClick={() => loadCase()}>
-            {icon('RefreshCw')} Refresh
+            {icon('RefreshCw')} {t('Refresh')}
           </Button>
         </div>
       </div>
 
       <div className="risk-strip">
         <div>
-          <small>RISK</small>
+          <small>{t('RISK')}</small>
           <strong className={requested ? 'very-high' : ''}>
             {caseDetail.uncertainty.risk_level}{' '}
             <b>{caseDetail.uncertainty.risk_score}</b>
           </strong>
         </div>
         <div>
-          <small>CONFIDENCE</small>
+          <small>{t('CONFIDENCE')}</small>
           <strong>
             {caseDetail.uncertainty.confidence >= 85 ? 'HIGH' : 'MEDIUM'}{' '}
             <b>{caseDetail.uncertainty.confidence}%</b>
           </strong>
         </div>
         <div>
-          <small>EVIDENCE SUFFICIENCY</small>
+          <small>{t('EVIDENCE SUFFICIENCY')}</small>
           <Badge tone={caseDetail.uncertainty.evidence_sufficiency === 'SUFFICIENT' ? 'green' : 'amber'}>
             {caseDetail.uncertainty.evidence_sufficiency}
           </Badge>
         </div>
         <div className="agent-state">
-          <span className="pulse violet" /> Agent active{' '}
-          <small>{caseDetail.timeline.length} events</small>
+          <span className="pulse violet" /> {t('Agent active')}{' '}
+          <small>{caseDetail.timeline.length} {t('events')}</small>
         </div>
       </div>
 
@@ -1153,8 +1166,8 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
 
         <section className="panel evidence-panel">
           <SectionTitle
-            eyebrow={`${evidenceList.length} ITEMS · LIVE`}
-            title="Evidence &amp; findings"
+            eyebrow={`${evidenceList.length} ${t('ITEMS · LIVE')}`}
+            title={t('Evidence & findings')}
             action={<button className="small-icon">{icon('SlidersHorizontal')}</button>}
           />
           <div className="evidence-list">
@@ -1176,19 +1189,19 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
           </div>
           <div className="finding">
             <div className="finding-label">
-              {icon('Sparkles')} Agent finding <span>{caseDetail.uncertainty.confidence}% confidence</span>
+              {icon('Sparkles')} {t('Agent finding')} <span>{caseDetail.uncertainty.confidence}% {t('confidence')}</span>
             </div>
             <strong>{caseDetail.finding_headline}</strong>
             <p style={{ margin: '6px 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>{caseDetail.finding_body}</p>
             <div className="finding-foot">
-              Pattern <b>{caseDetail.finding_pattern}</b> · Policy <b>{caseDetail.finding_policy}</b>
+              {t('Pattern')} <b>{caseDetail.finding_pattern}</b> · {t('Policy')} <b>{caseDetail.finding_policy}</b>
             </div>
           </div>
         </section>
       </div>
 
       <section className="panel timeline-panel">
-        <SectionTitle title="Agent activity" action={<span className="live"><i /> Live Stream</span>} />
+        <SectionTitle title={t('Agent activity')} action={<span className="live"><i /> {t('Live Stream')}</span>} />
         <div className="timeline">
           {caseDetail.timeline.map(([time, label, state]) => (
             <div className={`timeline-event ${state}`} key={time + label}>
@@ -1202,43 +1215,43 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
 
       <div className="lower-grid">
         <section className="panel uncertainty">
-          <SectionTitle eyebrow="DECISION READINESS" title="Investigation uncertainty" />
+          <SectionTitle eyebrow={t('DECISION READINESS')} title={t('Investigation uncertainty')} />
           <div className="certainty-grid">
             <div>
-              <small>Known</small>
+              <small>{t('Known')}</small>
               {caseDetail.uncertainty.known_signals.map((s) => (
                 <p key={s}>✓ {s}</p>
               ))}
             </div>
             <div>
-              <small>Uncertain</small>
+              <small>{t('Uncertain')}</small>
               {caseDetail.uncertainty.uncertain_signals.length > 0 ? (
                 caseDetail.uncertainty.uncertain_signals.map((s) => <p key={s}>? {s}</p>)
               ) : (
-                <p style={{ color: 'var(--green)' }}>✓ All key uncertainties resolved</p>
+                <p style={{ color: 'var(--green)' }}>✓ {t('All key uncertainties resolved')}</p>
               )}
             </div>
           </div>
           <div className="meter-label">
-            <span>Confidence meter</span>
+            <span>{t('Confidence meter')}</span>
             <strong>{caseDetail.uncertainty.confidence}%</strong>
           </div>
           <div className="meter">
             <span style={{ width: `${caseDetail.uncertainty.confidence}%` }} />
           </div>
           <div className="callout">
-            {requested ? 'Evidence now supports definitive intervention.' : 'Why we are not acting yet'}
+            {requested ? t('Evidence now supports definitive intervention.') : t('Why we are not acting yet')}
             <small>{caseDetail.uncertainty.why_not_acting}</small>
           </div>
         </section>
 
         <section className="panel next-action">
           <SectionTitle
-            eyebrow="RECOMMENDED NEXT-BEST-ACTION"
+            eyebrow={t('RECOMMENDED NEXT-BEST-ACTION')}
             title={toTitleCase(caseDetail.recommendation.current_recommended_action)}
             action={
               <Badge tone={caseDetail.recommendation.approval_required ? 'red' : 'amber'}>
-                {caseDetail.recommendation.approval_required ? 'Approval required' : 'Allowed'}
+                {caseDetail.recommendation.approval_required ? t('Approval required') : t('Allowed')}
               </Badge>
             }
           />
@@ -1266,27 +1279,27 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
             ))}
           </div>
           <div className="policy-row">
-            <span>Policy <strong>{caseDetail.recommendation.policy_rule}</strong></span>
-            <span>Required role <strong>{caseDetail.recommendation.required_role}</strong></span>
+            <span>{t('Policy')} <strong>{caseDetail.recommendation.policy_rule}</strong></span>
+            <span>{t('Required role')} <strong>{caseDetail.recommendation.required_role}</strong></span>
           </div>
           <div className="action-buttons">
             {requested ? (
               <>
                 <Button variant="outline" onClick={() => setDrawer('provenance')}>
-                  View evidence
+                  {t('View evidence')}
                 </Button>
                 <Button onClick={() => setDrawer('approval')}>
-                  {isAwaitingApproval ? 'Awaiting supervisor approval' : 'Request approval'}{' '}
+                  {isAwaitingApproval ? t('Awaiting supervisor approval') : t('Request approval')}{' '}
                   {icon('ArrowRight')}
                 </Button>
               </>
             ) : (
               <>
                 <Button variant="outline" onClick={() => setDrawer('why')}>
-                  Why this evidence?
+                  {t('Why this evidence?')}
                 </Button>
                 <Button onClick={handleRequestEvidence} disabled={isRequestingEvidence}>
-                  {isRequestingEvidence ? 'Requesting validation...' : 'Request customer evidence'}{' '}
+                  {isRequestingEvidence ? t('Requesting validation...') : t('Request customer evidence')}{' '}
                   {icon('ArrowRight')}
                 </Button>
               </>
@@ -1303,27 +1316,27 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
             </button>
             {drawer === 'approval' ? (
               <>
-                <div className="eyebrow">APPROVAL REQUEST</div>
-                <h2>Send for supervisor approval?</h2>
+                <div className="eyebrow">{t('APPROVAL REQUEST')}</div>
+                <h2>{t('Send for supervisor approval?')}</h2>
                 <p>
                   Escalate {caseDetail.id} to a {caseDetail.recommendation.required_role} under {caseDetail.recommendation.policy_rule}.
                 </p>
                 <div className="approval-summary">
-                  <span>Risk <strong>{caseDetail.uncertainty.risk_level} · {caseDetail.uncertainty.risk_score}</strong></span>
-                  <span>Confidence <strong>{caseDetail.uncertainty.confidence}%</strong></span>
-                  <span>Exposure <strong>${caseDetail.exposure_usd.toFixed(2)} USD</strong></span>
-                  <span>Action <strong>{caseDetail.recommendation.current_recommended_action}</strong></span>
+                  <span>{t('Risk')} <strong>{caseDetail.uncertainty.risk_level} · {caseDetail.uncertainty.risk_score}</strong></span>
+                  <span>{t('Confidence')} <strong>{caseDetail.uncertainty.confidence}%</strong></span>
+                  <span>{t('Exposure')} <strong>${caseDetail.exposure_usd.toFixed(2)} USD</strong></span>
+                  <span>{t('Action')} <strong>{caseDetail.recommendation.current_recommended_action}</strong></span>
                 </div>
                 <Button onClick={handleSendApproval} disabled={isSubmittingApproval}>
-                  {isSubmittingApproval ? 'Submitting...' : 'Send for approval'} {icon('ArrowRight')}
+                  {isSubmittingApproval ? t('Submitting...') : t('Send for approval')} {icon('ArrowRight')}
                 </Button>
               </>
             ) : (
               <>
                 <div className="eyebrow">
-                  {drawer === 'provenance' ? 'TRACEABILITY' : 'EVIDENCE PLANNER'}
+                  {drawer === 'provenance' ? t('TRACEABILITY') : t('EVIDENCE PLANNER')}
                 </div>
-                <h2>{drawer === 'provenance' ? 'Evidence provenance' : 'Why this evidence?'}</h2>
+                <h2>{drawer === 'provenance' ? t('Evidence provenance') : t('Why this evidence?')}</h2>
                 <div className="lineage">
                   {(drawer === 'provenance'
                     ? [
@@ -1367,6 +1380,7 @@ function ApprovalsPage() {
   const [approvals, setApprovals] = useState<ApprovalItem[]>([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
+  const { t } = useTranslation()
 
   const loadApprovals = async () => {
     try {
@@ -1407,9 +1421,9 @@ function ApprovalsPage() {
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">HUMAN-IN-THE-LOOP CONTROL</div>
-          <h1>Pending Approvals</h1>
-          <p>Review policy-constrained actions requiring supervisor or lead authorization.</p>
+          <div className="eyebrow">{t('HUMAN-IN-THE-LOOP CONTROL')}</div>
+          <h1>{t('Pending Approvals')}</h1>
+          <p>{t('Review policy-constrained actions requiring supervisor or lead authorization.')}</p>
         </div>
       </div>
 
@@ -1418,15 +1432,15 @@ function ApprovalsPage() {
           <table>
             <thead>
               <tr>
-                <th>Approval ID</th>
-                <th>Case</th>
-                <th>Action</th>
-                <th>Route</th>
-                <th>Risk</th>
-                <th>Confidence</th>
-                <th>Exposure</th>
-                <th>Status</th>
-                <th>Decision</th>
+                <th>{t('Approval ID')}</th>
+                <th>{t('Case')}</th>
+                <th>{t('Action')}</th>
+                <th>{t('Route')}</th>
+                <th>{t('Risk')}</th>
+                <th>{t('Confidence')}</th>
+                <th>{t('Exposure')}</th>
+                <th>{t('Status')}</th>
+                <th>{t('Decision')}</th>
               </tr>
             </thead>
             <tbody>
@@ -1447,11 +1461,11 @@ function ApprovalsPage() {
                   <td>
                     {a.status === 'PENDING' ? (
                       <div style={{ display: 'flex', gap: '6px' }}>
-                        <Button size="sm" onClick={() => handleApprove(a.id)}>Approve</Button>
-                        <Button variant="outline" size="sm" onClick={() => handleReject(a.id)}>Reject</Button>
+                        <Button size="sm" onClick={() => handleApprove(a.id)}>{t('Approve')}</Button>
+                        <Button variant="outline" size="sm" onClick={() => handleReject(a.id)}>{t('Reject')}</Button>
                       </div>
                     ) : (
-                      <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Executed</span>
+                      <span style={{ color: 'var(--muted)', fontSize: '11px' }}>{t('Executed')}</span>
                     )}
                   </td>
                 </tr>
@@ -1483,6 +1497,7 @@ function MemoryPage({ cases = [] }: { cases?: CaseListItem[] }) {
   const [patternFilter, setPatternFilter] = useState<string>('All')
   const [search, setSearch] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
+  const { t } = useTranslation()
 
   const loadMemory = async () => {
     setLoading(true)
@@ -1520,9 +1535,9 @@ function MemoryPage({ cases = [] }: { cases?: CaseListItem[] }) {
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">GRAPH-INDEXED MEMORY (5,565 CASES)</div>
-          <h1>Case Memory</h1>
-          <p>Historical investigation context for better decisions, retrieved from TigerGraph closed cases.</p>
+          <div className="eyebrow">{t('GRAPH-INDEXED MEMORY')} (5,565 CASES)</div>
+          <h1>{t('Case Memory')}</h1>
+          <p>{t('Historical investigation context for better decisions, retrieved from TigerGraph closed cases.')}</p>
         </div>
       </div>
 
@@ -1592,6 +1607,7 @@ function MemoryPage({ cases = [] }: { cases?: CaseListItem[] }) {
 
 function AuditPage() {
   const [events, setEvents] = useState<AuditLogItem[]>([])
+  const { t } = useTranslation()
 
   useEffect(() => {
     api.getAuditEvents().then(setEvents).catch(console.error)
@@ -1601,9 +1617,9 @@ function AuditPage() {
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">COMPLIANCE &amp; TRACEABILITY</div>
-          <h1>Audit Log</h1>
-          <p>Operational event stream across AI agents, tools, policies and human supervisors.</p>
+          <div className="eyebrow">{t('COMPLIANCE & TRACEABILITY')}</div>
+          <h1>{t('Audit Log')}</h1>
+          <p>{t('Operational event stream across AI agents, tools, policies and human supervisors.')}</p>
         </div>
       </div>
 
@@ -1612,12 +1628,12 @@ function AuditPage() {
           <table>
             <thead>
               <tr>
-                <th>Timestamp</th>
-                <th>Case ID</th>
-                <th>Actor</th>
-                <th>Event</th>
-                <th>Tool / Action</th>
-                <th>Outcome / Result</th>
+                <th>{t('Timestamp')}</th>
+                <th>{t('Case ID')}</th>
+                <th>{t('Actor')}</th>
+                <th>{t('Event')}</th>
+                <th>{t('Tool / Action')}</th>
+                <th>{t('Outcome / Result')}</th>
               </tr>
             </thead>
             <tbody>
@@ -1645,6 +1661,7 @@ function BenchmarkPage() {
   const [isRunning, setIsRunning] = useState(false)
   const [activeAnswer, setActiveAnswer] = useState<any>(null)
   const [toast, setToast] = useState('')
+  const { t } = useTranslation()
 
   const loadBenchmark = async () => {
     try {
@@ -1691,13 +1708,13 @@ function BenchmarkPage() {
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">HHGOA BENCHMARK HARNESS (20 EXAM CASES)</div>
-          <h1>Benchmark Evaluation</h1>
-          <p>Execute the investigation agent against the 20 official HHGOA exam cases.</p>
+          <div className="eyebrow">{t('HHGOA BENCHMARK HARNESS (20 EXAM CASES)')}</div>
+          <h1>{t('Benchmark Evaluation')}</h1>
+          <p>{t('Execute the investigation agent against the 20 official HHGOA exam cases.')}</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <Button onClick={handleRunAll} disabled={isRunning}>
-            {isRunning ? 'Evaluating cases...' : 'Run All 20 Cases'} {icon('Play')}
+            {isRunning ? 'Evaluating cases...' : t('Run All 20 Cases')} {icon('Play')}
           </Button>
         </div>
       </div>
@@ -1752,16 +1769,16 @@ function BenchmarkPage() {
           <table>
             <thead>
               <tr>
-                <th>Case</th>
-                <th>Trigger</th>
-                <th>Flagged Txn</th>
-                <th>Card</th>
-                <th>Amount</th>
-                <th>Verdict</th>
-                <th>Probability</th>
-                <th>Pattern</th>
-                <th>SAR</th>
-                <th>Actions</th>
+                <th>{t('Case')}</th>
+                <th>{t('Trigger')}</th>
+                <th>{t('Flagged Txn')}</th>
+                <th>{t('Card')}</th>
+                <th>{t('Amount')}</th>
+                <th>{t('Verdict')}</th>
+                <th>{t('Probability')}</th>
+                <th>{t('Pattern')}</th>
+                <th>{t('SAR')}</th>
+                <th>{t('Actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -1846,6 +1863,7 @@ function BenchmarkPage() {
 
 function SettingsPage() {
   const [health, setHealth] = useState<any>(null)
+  const { t } = useTranslation()
 
   useEffect(() => {
     api.getHealth().then(setHealth).catch(console.error)
@@ -1855,9 +1873,9 @@ function SettingsPage() {
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">SYSTEM &amp; INTEGRATION STATUS</div>
-          <h1>Settings &amp; Environment</h1>
-          <p>Connectivity, TigerGraph MCP tools, and agent execution parameters.</p>
+          <div className="eyebrow">{t('SYSTEM & INTEGRATION STATUS')}</div>
+          <h1>{t('Settings & Environment')}</h1>
+          <p>{t('Connectivity, TigerGraph MCP tools, and agent execution parameters.')}</p>
         </div>
       </div>
 
@@ -1892,7 +1910,12 @@ export default function SentinelApp() {
   const [auditEvents, setAuditEvents] = useState<AuditLogItem[]>([])
   const [systemStatus, setSystemStatus] = useState('TigerGraph · Connected')
   const [graphCaseId, setGraphCaseId] = useState('CASE-10293')
-  const [lang, setLang] = useState<string>('en')
+  const [lang, setLang] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sentinel_lang') || 'en'
+    }
+    return 'en'
+  })
 
   // Theme initialization from localStorage (defaults to light mode)
   useEffect(() => {
@@ -1958,66 +1981,69 @@ export default function SentinelApp() {
 
   // Extract caseId for workspace
   const activeCaseId = isInvestigationDetail ? path.replace('/investigations/', '') : 'CASE-10293'
+  const translateFn = (keyOrPhrase: string) => t(keyOrPhrase, lang)
 
   return (
-    <div className="app-shell">
-      <div id="google_translate_element" style={{ display: 'none' }} />
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} metrics={metrics} />
-      <div className="main-shell">
-        <Header
-          onSearch={setSearch}
-          systemStatus={systemStatus}
-          onToggleSidebar={() => setCollapsed(!collapsed)}
-          sidebarCollapsed={collapsed}
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
-          lang={lang}
-          onSelectLang={handleSelectLang}
-        />
-        <main className="main-content">
-          {isDashboard && <Dashboard cases={cases} metrics={metrics} auditEvents={auditEvents} />}
-          {isQueue && <Queue cases={cases} metrics={metrics} />}
-          {isCases && <CasesPage cases={cases} metrics={metrics} />}
-          {isInvestigationDetail && <InvestigationWorkspace caseId={activeCaseId} />}
-          {isApprovals && <ApprovalsPage />}
-          {isMemory && <MemoryPage cases={cases} />}
-          {isAudit && <AuditPage />}
-          {isBenchmark && <BenchmarkPage />}
-          {isSettings && <SettingsPage />}
-          {isGraph && (
-            <>
-              <div className="page-heading">
-                <div>
-                  <div className="eyebrow">GRAPH EXPLORER</div>
-                  <h1>Enterprise Graph Visualizer</h1>
-                  <p>Interactive graph topology of entities, devices, and transaction chains.</p>
+    <TranslationContext.Provider value={{ lang, setLang: handleSelectLang, t: translateFn }}>
+      <div className="app-shell">
+        <div id="google_translate_element" style={{ display: 'none' }} />
+        <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} metrics={metrics} />
+        <div className="main-shell">
+          <Header
+            onSearch={setSearch}
+            systemStatus={systemStatus}
+            onToggleSidebar={() => setCollapsed(!collapsed)}
+            sidebarCollapsed={collapsed}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+            lang={lang}
+            onSelectLang={handleSelectLang}
+          />
+          <main className="main-content">
+            {isDashboard && <Dashboard cases={cases} metrics={metrics} auditEvents={auditEvents} />}
+            {isQueue && <Queue cases={cases} metrics={metrics} />}
+            {isCases && <CasesPage cases={cases} metrics={metrics} />}
+            {isInvestigationDetail && <InvestigationWorkspace caseId={activeCaseId} />}
+            {isApprovals && <ApprovalsPage />}
+            {isMemory && <MemoryPage cases={cases} />}
+            {isAudit && <AuditPage />}
+            {isBenchmark && <BenchmarkPage />}
+            {isSettings && <SettingsPage />}
+            {isGraph && (
+              <>
+                <div className="page-heading">
+                  <div>
+                    <div className="eyebrow">{t('GRAPH EXPLORER', lang)}</div>
+                    <h1>{t('Enterprise Graph Visualizer', lang)}</h1>
+                    <p>{t('Interactive graph topology of entities, devices, and transaction chains.', lang)}</p>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <small style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Active Case:</small>
+                    <select
+                      value={graphCaseId}
+                      onChange={(e) => setGraphCaseId(e.target.value)}
+                      style={{ padding: '6px 12px', background: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '12px' }}
+                    >
+                      {cases.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.id} ({c.customer} · ${c.amount.toFixed(2)})
+                        </option>
+                      ))}
+                      {cases.length === 0 && <option value="CASE-10293">CASE-10293</option>}
+                    </select>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <small style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Active Case:</small>
-                  <select
-                    value={graphCaseId}
-                    onChange={(e) => setGraphCaseId(e.target.value)}
-                    style={{ padding: '6px 12px', background: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '12px' }}
-                  >
-                    {cases.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.id} ({c.customer} · ${c.amount.toFixed(2)})
-                      </option>
-                    ))}
-                    {cases.length === 0 && <option value="CASE-10293">CASE-10293</option>}
-                  </select>
+                <div className="standalone-graph">
+                  <InvestigationWorkspace caseId={graphCaseId} />
                 </div>
-              </div>
-              <div className="standalone-graph">
-                <InvestigationWorkspace caseId={graphCaseId} />
-              </div>
-            </>
-          )}
-        </main>
+              </>
+            )}
+          </main>
+        </div>
+        <div className="analyst-floating-badge" title="Sentinel Fraud Operations Analyst">
+          N
+        </div>
       </div>
-      <div className="analyst-floating-badge" title="Sentinel Fraud Operations Analyst">
-        N
-      </div>
-    </div>
+    </TranslationContext.Provider>
   )
 }

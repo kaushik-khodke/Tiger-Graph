@@ -30,7 +30,27 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var lang = localStorage.getItem('sentinel_lang');
+                  if (lang) {
+                    document.documentElement.lang = lang;
+                  }
+                  var theme = localStorage.getItem('sentinel_theme');
+                  if (theme) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                  }
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="antialiased">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
