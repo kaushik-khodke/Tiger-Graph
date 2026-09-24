@@ -4,6 +4,45 @@ Six months of card transactions from the **IEEE-CIS Fraud Detection** dataset, p
 
 The data is anonymized by its publisher. No real people.
 
+## SUBMISSION CHECKLIST
+
+- [x] Public GitHub repository
+- [x] `cases/` exists at repository root
+- [x] `HHG-001.json` exists
+- [x] `HHG-002.json` exists
+- [x] `HHG-003.json` exists
+- [x] `HHG-004.json` exists
+- [x] `HHG-005.json` exists
+- [x] `HHG-006.json` exists
+- [x] `HHG-007.json` exists
+- [x] `HHG-008.json` exists
+- [x] `HHG-009.json` exists
+- [x] `HHG-010.json` exists
+- [x] `HHG-011.json` exists
+- [x] `HHG-012.json` exists
+- [x] `HHG-013.json` exists
+- [x] `HHG-014.json` exists
+- [x] `HHG-015.json` exists
+- [x] `HHG-016.json` exists
+- [x] `HHG-017.json` exists
+- [x] `HHG-018.json` exists
+- [x] `HHG-019.json` exists
+- [x] `HHG-020.json` exists
+- [x] 20 answer files exactly
+- [x] all schema valid
+- [x] all IDs valid
+- [x] all actions valid
+- [x] all approval routes valid
+- [x] SAR consistency valid
+- [x] graph cases written
+- [x] TigerGraph integrated (`tigergraph/schema.gsql`, `tigergraph/queries.gsql`)
+- [x] GSQL integrated
+- [x] TigerGraph MCP integrated
+- [x] GraphRAG integrated
+- [x] agent workflow working
+- [x] benchmark runner completed (`scripts/run_benchmark.py`)
+- [x] submission validator passes (`scripts/validate_submission.py`)
+
 ## The task
 
 Load the data into TigerGraph. Build an agent that takes a case from the case pack, investigates it using the graph and the closed cases, works out **what kind of fraud it is** (if any), **how far it goes**, and **what to do next** under the Fraud Policy section below, and knows when it needs more evidence before deciding. Run it on all 20 cases.
