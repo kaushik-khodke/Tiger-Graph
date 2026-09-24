@@ -28,6 +28,7 @@ class GraphClient:
 
     def _init_local_index(self):
         """Builds in-memory entity & relationship graph for rapid fallback resolution."""
+        # Golden case base entities
         self._cached_entities["C-123"] = {"type": "Customer", "id": "C-123", "tenure": "3 years", "risk": "Medium"}
         self._cached_entities["C-811"] = {"type": "Customer", "id": "C-811", "status": "Confirmed Fraudster", "risk": "Very High"}
         self._cached_entities["D-77"] = {"type": "Device", "id": "D-77", "model": "Samsung SM-G892A", "os": "Android 7.0"}
@@ -42,6 +43,35 @@ class GraphClient:
             {"from": "TXN-10293", "to": "M-42", "type": "PROCESSED_AT", "time": "2016-12-05 10:01:00"},
             {"from": "C-811", "to": "CC-0141", "type": "LINKED_TO_CASE", "time": "2016-08-14 16:00:00"}
         ]
+
+        # Dynamically load from case_pack.csv
+        case_csv = settings.CASE_PACK_CSV
+        if case_csv.exists():
+            try:
+                import csv
+                with open(case_csv, "r", encoding="utf-8", errors="ignore") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        cid = row.get("case_id", "").strip()
+                        cust_id = row.get("customer_id", "").strip()
+                        card_id = row.get("card_id", "").strip()
+                        txn_id = row.get("flagged_txn_id", "").strip()
+                        opened = row.get("opened_at", "2016-12-05 00:00:00")
+                        score = float(row.get("risk_score") or 0.70)
+
+                        if cust_id and cust_id not in self._cached_entities:
+                            self._cached_entities[cust_id] = {"type": "Customer", "id": cust_id, "risk": "High" if score > 0.8 else "Medium"}
+                        if card_id and card_id not in self._cached_entities:
+                            self._cached_entities[card_id] = {"type": "Card", "id": card_id, "customer": cust_id}
+                        if txn_id and txn_id not in self._cached_entities:
+                            self._cached_entities[txn_id] = {"type": "Transaction", "id": txn_id, "card": card_id, "risk_score": score}
+
+                        if cust_id and card_id:
+                            self._cached_relationships.append({"from": cust_id, "to": card_id, "type": "OWNS", "time": opened})
+                        if card_id and txn_id:
+                            self._cached_relationships.append({"from": card_id, "to": txn_id, "type": "PERFORMED_TRANSACTION", "time": opened})
+            except Exception:
+                pass
 
     def _refresh_token(self) -> Optional[str]:
         """Obtains or refreshes JWT authentication token from TigerGraph Savanna Cloud."""
