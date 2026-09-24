@@ -5,40 +5,53 @@ Sentinel AI is an Agentic Fraud Investigation & Next-Best-Action Platform built 
 ---
 
 ## 1. Prerequisites
-- **Node.js**: v18+ or v20+
-- **Python**: 3.10+
-- **Environment Configuration**:
-  - `backend/.env` contains your Gemini API keys and Langfuse credentials.
-  - (Optional) `.env.example` provides template configurations.
+- **Node.js**: v18+ or v20+ or v22+ (`node --version`)
+- **Python**: 3.10+ (`python --version`)
+- **Git** (optional)
 
 ---
 
-## 2. Backend Setup & Startup (FastAPI)
+## 2. Environment Configuration
 
-1. Open a terminal in the `backend` directory:
+1. In the `backend` directory, create a `.env` file (or copy from `.env.example`):
    ```powershell
-   cd "d:\Downloads\tiger trace\backend"
+   cd backend
+   Copy-Item .env.example .env
+   ```
+2. (Optional) Add your Google Gemini API key:
+   ```env
+   GOOGLE_API_KEY=your_gemini_api_key_here
+   ```
+   *Note: If no API key is provided, Sentinel AI runs seamlessly in offline deterministic fallback mode for all 20 cases and 19 test suites.*
+
+---
+
+## 3. Backend Setup & Startup (FastAPI)
+
+1. Open a terminal in the project root:
+   ```powershell
+   cd backend
    ```
 
-2. Install dependencies:
+2. Install Python dependencies:
    ```powershell
    pip install -r requirements.txt
    ```
 
 3. Launch the FastAPI server with hot-reload:
    ```powershell
-   uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+   python -m uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
    ```
    - **API Docs (Swagger UI)**: `http://localhost:8001/docs`
    - **Health Check**: `http://localhost:8001/health`
 
 ---
 
-## 3. Frontend Setup & Startup (Next.js)
+## 4. Frontend Setup & Startup (Next.js)
 
-1. Open a second terminal in the `frontend` directory:
+1. Open a second terminal:
    ```powershell
-   cd "d:\Downloads\tiger trace\frontend"
+   cd frontend
    ```
 
 2. Install dependencies:
@@ -46,7 +59,7 @@ Sentinel AI is an Agentic Fraud Investigation & Next-Best-Action Platform built 
    npm install
    ```
 
-3. Launch the development server:
+3. Launch the Next.js development server:
    ```powershell
    npm run dev
    ```
@@ -54,37 +67,31 @@ Sentinel AI is an Agentic Fraud Investigation & Next-Best-Action Platform built 
 
 ---
 
-## 4. Running the Automated Test Suite
+## 5. Running the Automated Test Suite
 
-To verify all unit tests, policy engine checks, LangGraph state machine execution, and model router fallbacks:
+To verify all 19 test suites including API endpoints, golden path investigations, policy engine rules (R1 to R10), model router fallbacks, and Langfuse resilience:
 
 ```powershell
-cd "d:\Downloads\tiger trace\backend"
-py -m pytest tests/ -v
+python -m pytest backend/tests -v
 ```
-
-All 19 test suites will run and pass:
-- API endpoints (`test_api.py`)
-- Golden Path CASE-10293 (`test_golden_case.py` & `test_langgraph_agent.py`)
-- Model Router 5-tier fallback & error detection (`test_model_router.py`)
-- Deterministic Policy Engine R1 to R10 (`test_policy_engine.py`)
-- Langfuse Observability & resilience (`test_langfuse_resilience.py`)
 
 ---
 
-## 5. Running the 20-Case Benchmark Evaluation
+## 6. Running the 20-Case Benchmark Evaluation
 
-To execute the official 20-case HHGOA evaluation harness and generate the standardized answer files:
+To execute the official 20-case HHGOA evaluation harness and validate the answer files:
 
 - **Via Frontend UI**:
-  Navigate to `http://localhost:3000` and click the **Benchmark** tab in the sidebar. Click **Run All Cases** to execute the entire benchmark batch.
+  Navigate to `http://localhost:3000/benchmark` and click **Run All Cases**.
   
-- **Via API**:
+- **Via CLI Script**:
   ```powershell
-  curl -X POST http://localhost:8001/api/benchmark/run-all
+  python scripts/run_benchmark.py
+  python scripts/finalize_submission.py
+  python scripts/validate_submission.py
   ```
 
-Output files with full case narratives, evidence claims, next-best-actions, and regulatory SARs are persisted to:
+Output answer files are stored in:
 ```
-d:\Downloads\tiger trace\cases\<case_id>.json
-```
+cases/HHG-001.json ... cases/HHG-020.json
+```
