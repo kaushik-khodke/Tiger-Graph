@@ -34,7 +34,8 @@ Thumbs.db
 .idea/
 
 # Large dataset files (not for git)
-*.csv
+transactions.csv
+identity.csv
 
 # Lock files (keep bun.lock, exclude others)
 pnpm-lock.yaml
