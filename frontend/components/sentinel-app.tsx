@@ -276,8 +276,8 @@ function InvestigationTable({ cases, compact = false }: { cases: CaseListItem[];
                     row.status === 'Awaiting Approval'
                       ? 'amber'
                       : row.status === 'Resolved' || row.status === 'Closed No Fraud'
-                      ? 'green'
-                      : 'blue'
+                        ? 'green'
+                        : 'blue'
                   }
                 >
                   {row.status}
@@ -807,8 +807,8 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
                 <b>Graph Provenance Findings</b>
               </div>
               <strong style={{ fontSize: '11px', color: '#e2e8f0', lineHeight: 1.6 }}>
-                Multi-hop graph traversal on TigerGraph confirmed device &amp; transaction clustering with 
-                suspicious pattern signature. Linked to {selectedSarCase.evidence} graph artifacts across 
+                Multi-hop graph traversal on TigerGraph confirmed device &amp; transaction clustering with
+                suspicious pattern signature. Linked to {selectedSarCase.evidence} graph artifacts across
                 the IEEE-CIS benchmark dataset.
               </strong>
               <div className="finding-foot">
@@ -817,7 +817,7 @@ COMPLIANCE SIGN-OFF: PENDING SUPERVISOR REVIEW`
             </div>
 
             <div style={{ background: '#0e141d', border: '1px solid var(--border)', borderRadius: '6px', padding: '12px', marginTop: '16px', fontFamily: 'monospace', fontSize: '10px', color: '#9ba7b9', whiteSpace: 'pre-wrap' }}>
-{`*** OFFICIAL FINCEN SAR NARRATIVE RECORD ***
+              {`*** OFFICIAL FINCEN SAR NARRATIVE RECORD ***
 FILING ENTITY: Sentinel AI Autonomous Operations
 RECORD REF: ${selectedSarCase.id}
 PRIMARY SUBJECT: ${selectedSarCase.customer}
@@ -870,6 +870,82 @@ function Graph({
     return nodes
   }, [nodes, filter])
 
+  // Compute the active path for the selected node or evidence
+  const { activeEdges, activeNodes } = useMemo(() => {
+    if (!selected) {
+      return { activeEdges: new Set<string>(), activeNodes: new Set<string>() }
+    }
+
+    const aEdges = new Set<string>()
+    const aNodes = new Set<string>([selected])
+
+    // Build adjacency list
+    const adj = new Map<string, string[]>()
+    edges.forEach(([u, v]) => {
+      if (!adj.has(u)) adj.set(u, [])
+      if (!adj.has(v)) adj.set(v, [])
+      adj.get(u)!.push(v)
+      adj.get(v)!.push(u)
+    })
+
+    // Find root / customer node
+    const rootNode = nodes.find((n) => n.kind === 'customer')?.id || nodes[0]?.id
+
+    // Helper: find path between two nodes
+    const findPath = (start: string, target: string, visited = new Set<string>()): string[] | null => {
+      if (start === target) return [start]
+      visited.add(start)
+      for (const next of adj.get(start) || []) {
+        if (!visited.has(next)) {
+          const res = findPath(next, target, visited)
+          if (res) return [start, ...res]
+        }
+      }
+      return null
+    }
+
+    // Collect all downstream nodes in DAG from a given node
+    const collectDownstream = (curr: string, visited: Set<string>) => {
+      visited.add(curr)
+      edges.forEach(([u, v]) => {
+        if (u === curr && !visited.has(v)) {
+          aEdges.add(`${u}-${v}`)
+          aEdges.add(`${v}-${u}`)
+          aNodes.add(v)
+          collectDownstream(v, visited)
+        }
+      })
+    }
+
+    if (rootNode && selected !== rootNode) {
+      const pathToRoot = findPath(rootNode, selected)
+      if (pathToRoot) {
+        for (let i = 0; i < pathToRoot.length - 1; i++) {
+          const u = pathToRoot[i]
+          const v = pathToRoot[i + 1]
+          aEdges.add(`${u}-${v}`)
+          aEdges.add(`${v}-${u}`)
+          aNodes.add(u)
+          aNodes.add(v)
+        }
+      }
+      // Also trace downstream from selected to leaf nodes of this branch
+      collectDownstream(selected, new Set<string>(pathToRoot || []))
+    } else {
+      // If rootNode is selected, highlight all direct incident edges
+      edges.forEach(([u, v]) => {
+        if (u === selected || v === selected) {
+          aEdges.add(`${u}-${v}`)
+          aEdges.add(`${v}-${u}`)
+          aNodes.add(u)
+          aNodes.add(v)
+        }
+      })
+    }
+
+    return { activeEdges: aEdges, activeNodes: aNodes }
+  }, [selected, edges, nodes])
+
   return (
     <div className="graph-box">
       <div className="graph-toolbar">
@@ -883,19 +959,19 @@ function Graph({
             <option value="Customers">Customers</option>
             <option value="Devices">Devices</option>
           </select>
-          <button title="Reset Selection" onClick={() => setSelected(null)}>
+          <button type="button" title="Reset Selection" onClick={() => setSelected(null)}>
             {icon('RotateCcw')}
           </button>
         </div>
       </div>
 
-      <div className="graph-canvas">
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Interactive relationship graph">
+      <div className="graph-canvas" onClick={() => setSelected(null)}>
+        <svg className="graph-edges" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Interactive relationship graph">
           {edges.map(([a, b]) => {
             const na = nodes.find((n) => n.id === a)
             const nb = nodes.find((n) => n.id === b)
             if (!na || !nb) return null
-            const isActive = selected === a || selected === b
+            const isActive = activeEdges.has(`${a}-${b}`) || activeEdges.has(`${b}-${a}`)
             return (
               <line
                 key={a + '-' + b}
@@ -909,39 +985,89 @@ function Graph({
           })}
         </svg>
 
-        {filteredNodes.map((n) => (
-          <button
-            key={n.id}
-            className={`graph-node node-${n.kind} ${selected === n.id ? 'selected' : ''}`}
-            style={{ left: `${n.x}%`, top: `${n.y}%` }}
-            onClick={() => setSelected(n.id)}
-          >
-            <span>
-              {icon(
-                n.kind === 'customer'
-                  ? 'UserRound'
-                  : n.kind === 'device'
-                  ? 'Smartphone'
-                  : n.kind === 'transaction'
-                  ? 'ArrowLeftRight'
-                  : n.kind === 'account'
-                  ? 'WalletCards'
-                  : n.kind === 'merchant'
-                  ? 'Store'
-                  : 'BriefcaseBusiness'
-              )}
-            </span>
-            <strong>{n.sub}</strong>
-            <small>{n.label}</small>
-          </button>
-        ))}
+        {filteredNodes.map((n) => {
+          const isSelected = selected === n.id
+          const isInPath = activeNodes.has(n.id)
+          return (
+            <button
+              key={n.id}
+              type="button"
+              className={`graph-node node-${n.kind} ${isSelected ? 'selected' : isInPath ? 'in-path' : ''}`}
+              style={{ left: `${n.x}%`, top: `${n.y}%` }}
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelected(isSelected ? null : n.id)
+              }}
+            >
+              <span>
+                {icon(
+                  n.kind === 'customer'
+                    ? 'UserRound'
+                    : n.kind === 'device'
+                      ? 'Smartphone'
+                      : n.kind === 'transaction'
+                        ? 'ArrowLeftRight'
+                        : n.kind === 'account' || n.kind === 'card'
+                          ? 'WalletCards'
+                          : n.kind === 'merchant'
+                            ? 'Store'
+                            : 'BriefcaseBusiness'
+                )}
+              </span>
+              <strong>{n.sub}</strong>
+              <small>{n.label}</small>
+            </button>
+          )
+        })}
+
+        {nodes.find((n) => n.id === selected) && (() => {
+          const an = nodes.find((n) => n.id === selected)!
+          const connCount = edges.filter(([a, b]) => a === an.id || b === an.id).length
+          // Smart non-overlapping anchor positioning:
+          // If node is in bottom half, show popup above it; if in top half, show below it
+          const isBottomHalf = an.y >= 50
+          const clampedX = Math.max(18, Math.min(82, an.x))
+          const cardStyle: React.CSSProperties = isBottomHalf
+            ? {
+                bottom: `calc(${100 - an.y}% + 34px)`,
+                left: `${clampedX}%`,
+                transform: 'translateX(-50%)'
+              }
+            : {
+                top: `calc(${an.y}% + 34px)`,
+                left: `${clampedX}%`,
+                transform: 'translateX(-50%)'
+              }
+
+          return (
+            <div
+              className="graph-inspector-card"
+              style={cardStyle}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="inspector-head">
+                <Badge tone={an.kind === 'customer' ? 'blue' : an.kind === 'device' ? 'green' : an.kind === 'transaction' ? 'amber' : an.kind === 'account' || an.kind === 'card' ? 'violet' : 'purple'}>
+                  {an.kind.toUpperCase()}
+                </Badge>
+                <button type="button" onClick={() => setSelected(null)} aria-label="Close inspector">✕</button>
+              </div>
+              <strong>{an.sub}</strong>
+              <p>{an.label} {an.meta?.amount ? `· ${an.meta.amount}` : ''} {an.meta?.model ? `· ${an.meta.model}` : ''}</p>
+              <div className="inspector-meta">
+                <span>TigerGraph entity · {connCount} connected link{connCount !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
+          )
+        })()}
       </div>
 
       <div className="graph-legend">
         {[
           ['customer', 'Customer'],
+          ['account', 'Account'],
           ['device', 'Device'],
           ['transaction', 'Transaction'],
+          ['merchant', 'Merchant'],
           ['case', 'Case'],
         ].map(([c, l]) => (
           <span key={c}>
@@ -1140,8 +1266,8 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
                 e={e}
                 onView={() => {
                   const parts = e.entities.split('→').map((s) => s.trim())
-                  const match = parts.find((p) => graphData?.nodes.some((n) => n.id === p)) || parts[0]
-                  setSelectedEntity(match || null)
+                  const target = [...parts].reverse().find((p) => graphData?.nodes.some((n) => n.id === p)) || parts[0]
+                  setSelectedEntity(target || null)
                 }}
                 onProvenance={() => {
                   setActiveEvidenceItem(e)
@@ -1223,13 +1349,13 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
             {(caseDetail.recommendation.reasons && caseDetail.recommendation.reasons.length > 0
               ? caseDetail.recommendation.reasons
               : requested
-              ? [
+                ? [
                   `Customer denial confirmed unauthorized transaction ${caseDetail.flagged_txn_id}`,
                   `Shared entity graph links device ${caseDetail.connected_device_profiles[0] || 'profile'} across cards`,
                   `Case memory identified confirmed fraud pattern (${caseDetail.pattern.replace(/_/g, ' ')})`,
                   `Exposure of $${caseDetail.exposure_usd.toFixed(2)} USD requires ${caseDetail.recommendation.required_role} review`
                 ]
-              : [
+                : [
                   `Uncertainty target: legitimate use vs account takeover on ${caseDetail.flagged_txn_id}`,
                   `Model risk score: ${caseDetail.uncertainty.risk_score}% on ${caseDetail.trigger_type.replace(/_/g, ' ')}`,
                   `Policy ${caseDetail.recommendation.policy_rule}: automated step-up verification required before card blocking`,
@@ -1303,20 +1429,20 @@ function InvestigationWorkspace({ caseId }: { caseId: string }) {
                 <div className="lineage">
                   {(drawer === 'provenance'
                     ? [
-                        `Investigation: ${caseDetail.id}`,
-                        `Evidence: ${activeEvidenceItem?.id} · ${activeEvidenceItem?.title || 'Signal Item'}`,
-                        `Entities Involved: ${activeEvidenceItem?.entities || caseDetail.customer_id}`,
-                        `Tool / Query: ${activeEvidenceItem?.provenance?.tool || 'TigerGraph GraphRAG'} (${activeEvidenceItem?.provenance?.query || 'relationship_query'})`,
-                        `Source: ${activeEvidenceItem?.source || 'TigerGraph'}`,
-                        `Retrieved at: ${activeEvidenceItem?.provenance?.retrieved_at || activeEvidenceItem?.time || 'Real-time'}`
-                      ]
+                      `Investigation: ${caseDetail.id}`,
+                      `Evidence: ${activeEvidenceItem?.id} · ${activeEvidenceItem?.title || 'Signal Item'}`,
+                      `Entities Involved: ${activeEvidenceItem?.entities || caseDetail.customer_id}`,
+                      `Tool / Query: ${activeEvidenceItem?.provenance?.tool || 'TigerGraph GraphRAG'} (${activeEvidenceItem?.provenance?.query || 'relationship_query'})`,
+                      `Source: ${activeEvidenceItem?.source || 'TigerGraph'}`,
+                      `Retrieved at: ${activeEvidenceItem?.provenance?.retrieved_at || activeEvidenceItem?.time || 'Real-time'}`
+                    ]
                     : [
-                        `Target Transaction: ${caseDetail.flagged_txn_id} ($${caseDetail.amount.toFixed(2)})`,
-                        `Recommended Protocol: ${caseDetail.recommendation.current_recommended_action.replace(/_/g, ' ')}`,
-                        `Decision Impact: HIGH (Risk score ${caseDetail.uncertainty.risk_score}%, Confidence ${caseDetail.uncertainty.confidence}%)`,
-                        `Governing Policy: ${caseDetail.recommendation.policy_rule}`,
-                        `Authorization Level: ${caseDetail.recommendation.required_role}`
-                      ]
+                      `Target Transaction: ${caseDetail.flagged_txn_id} ($${caseDetail.amount.toFixed(2)})`,
+                      `Recommended Protocol: ${caseDetail.recommendation.current_recommended_action.replace(/_/g, ' ')}`,
+                      `Decision Impact: HIGH (Risk score ${caseDetail.uncertainty.risk_score}%, Confidence ${caseDetail.uncertainty.confidence}%)`,
+                      `Governing Policy: ${caseDetail.recommendation.policy_rule}`,
+                      `Authorization Level: ${caseDetail.recommendation.required_role}`
+                    ]
                   ).map((x, i) => (
                     <div key={x}>
                       <i>{i + 1}</i>
