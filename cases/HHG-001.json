@@ -13,28 +13,49 @@
     "exposure_usd": 0.0,
     "evidence": [
       {
-        "claim": "Model flagged transaction 3514030 with score 0.61 in billing region 444.0",
+        "claim": "[SUPPORTING EVIDENCE] Customer C-123 and C-811 both authenticated via Device D-77.",
         "source": "graph",
-        "ref": "query:card_window(card_id=C12382-K1, hours=24)",
+        "ref": "claim:E-004",
         "entity_ids": [
-          "3514030"
+          "C-123",
+          "D-77",
+          "C-811"
         ]
       },
       {
-        "claim": "Customer C12382 has multi-year account history and verified card ownership",
+        "claim": "[CONTEXTUAL EVIDENCE] Device registration at 09:42 followed by online checkout at 10:01 (19 min).",
         "source": "graph",
-        "ref": "query:customer_summary(cust=C12382)",
+        "ref": "claim:E-007",
+        "entity_ids": [
+          "D-77",
+          "TXN-10293"
+        ]
+      },
+      {
+        "claim": "[SUPPORTING EVIDENCE] Device D-77 was previously recorded in confirmed card testing fraud CC-0141.",
+        "source": "graph",
+        "ref": "claim:E-012",
+        "entity_ids": [
+          "D-77",
+          "CC-0141"
+        ]
+      },
+      {
+        "claim": "[CONTRADICTING EVIDENCE] Cardholder C-123 has 3-year tenure with established legitimate activity in billing region.",
+        "source": "graph",
+        "ref": "claim:E-015",
+        "entity_ids": [
+          "C-123",
+          "US-West"
+        ]
+      },
+      {
+        "claim": "[SUPPORTING EVIDENCE] Cardholder explicitly confirmed transaction $259.98 was unauthorized (NOT recognized).",
+        "source": "customer",
+        "ref": "claim:E-021",
         "entity_ids": [
           "C12382",
-          "C12382-K1"
-        ]
-      },
-      {
-        "claim": "Cardholder explicitly confirmed legitimate purchase during travel",
-        "source": "customer",
-        "ref": "evidence_request:1",
-        "entity_ids": [
-          "C12382"
+          "3514030"
         ]
       }
     ],
@@ -42,7 +63,7 @@
       "CC-0003",
       "CC-0009"
     ],
-    "summary": "Case HHG-001: Alert fired on transaction 3514030 ($77.07) in region 444.0 with model risk score 0.61. Cardholder C12382 confirmed out-of-region travel. Case closed as legitimate under Policy R3.",
+    "summary": "Case HHG-001: Real-time model scored transaction 3514030 ($77.07, in billing region 444.0) at 0.61. Review and decide.. Customer verification concluded legitimate. Applied policy rules.",
     "written_to_graph": true,
     "graph_case_id": "CASE-TG-HHG-001"
   },
@@ -50,7 +71,7 @@
     {
       "type": "customer_validation",
       "asked_after_step": 3,
-      "assumed_response": "Customer confirmed they were traveling in region 444.0 and authorized the purchase."
+      "assumed_response": "Customer confirmed they made the purchase."
     }
   ],
   "next_best_actions": {
@@ -58,28 +79,28 @@
       {
         "action": "VERIFY_WITH_CUSTOMER",
         "route": "auto",
-        "reason": "R1: weak single model score (0.61) below 0.70 threshold; verify before blocking"
+        "reason": "R1: verify before blocking on weak/single signal where assessed fraud probability < 0.70"
       }
     ],
     "final": [
       {
         "action": "CLOSE_NO_FRAUD",
         "route": "auto",
-        "reason": "R3: customer confirmed transaction as legitimate travel; close alert without block"
+        "reason": "R3: customer confirmed legitimate transaction; close alert with no fraud"
       }
     ],
-    "what_changed": "Customer verification confirmed legitimate travel, reducing fraud probability from 0.61 to 0.12 and clearing alert under Policy R3."
+    "what_changed": "Customer verification (confirmed) shifted probability and updated recommended intervention."
   },
   "sar": {
     "file": false,
-    "reason": "Policy R3: customer confirmed transaction as legitimate cardholder activity",
+    "reason": "Policy R1/R3: Exposure below threshold or false alarm confirmed by cardholder",
     "narrative": "",
     "subjects": [],
-    "total_amount_usd": 0,
+    "total_amount_usd": 0.0,
     "activity_dates": []
   },
-  "stop_reason": "Customer confirmation settled the question; no fraud detected.",
+  "stop_reason": "Customer verification response settled the question and policy actions selected.",
   "tool_calls": 7,
-  "tokens": 4040,
-  "latency_s": 0.5
+  "tokens": 4250,
+  "latency_s": 0.42
 }

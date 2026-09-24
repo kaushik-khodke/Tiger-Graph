@@ -136,9 +136,18 @@ class BenchmarkService:
                     ent = [e.strip() for e in ent.replace("→", ",").replace("->", ",").split(",") if e.strip()]
                 elif not isinstance(ent, list):
                     ent = [str(ent)]
+                raw_src = str(ev.get("source", "graph")).lower()
+                if "graph" in raw_src or "tiger" in raw_src:
+                    norm_src = "graph"
+                elif "customer" in raw_src or "sms" in raw_src or "validation" in raw_src:
+                    norm_src = "customer"
+                elif "document" in raw_src or "file" in raw_src or "report" in raw_src:
+                    norm_src = "document"
+                else:
+                    norm_src = "external"
                 claims.append(EvidenceClaim(
                     claim=f"[{ev.get('type', 'EVIDENCE').upper()}] {ev.get('description', '')}",
-                    source=ev.get("source", "graph"),
+                    source=norm_src,
                     ref=f"claim:{ev.get('id', '1')}",
                     entity_ids=ent
                 ))

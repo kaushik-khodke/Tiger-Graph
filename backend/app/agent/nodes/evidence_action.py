@@ -18,7 +18,7 @@ def evidence_action(state: InvestigationState) -> Dict[str, Any]:
         "type": "Supporting Evidence",
         "title": "Customer Transaction Validation: Denied",
         "description": "Cardholder explicitly confirmed transaction $259.98 was unauthorized (NOT recognized).",
-        "source": "Out-of-Band SMS / Push Validation",
+        "source": "customer",
         "strength": "Strong",
         "tone": "support",
         "entities": f"{state.customer.get('id', 'C-123')} → {state.transaction.get('id', 'TXN-10293')}",
