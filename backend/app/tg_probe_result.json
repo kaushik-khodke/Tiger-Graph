@@ -1,0 +1,15 @@
+{
+  "status": "reachable",
+  "host": "https://tg-f1b9d725-8cb1-417c-b82a-3ddb62b6122a.tg-2635877100.i.tgcloud.io",
+  "graph": "MyDatabase",
+  "details": {
+    "echo": {
+      "error": false,
+      "message": "Hello GSQL"
+    },
+    "token_http_error": {
+      "code": 400,
+      "body": "<!doctype html><html lang=\"en\"><head><title>HTTP Status 400 \u2013 Bad Request</title><style type=\"text/css\">body {font-family:Tahoma,Arial,sans-serif;} h1, h2, h3, b {color:white;background-color:#525D76;} h1 {font-size:22px;} h2 {font-size:16px;} h3 {font-size:14px;} p {font-size:12px;} a {color:black;} .line {height:1px;background-color:#525D76;border:none;}</style></head><body><h1>HTTP Status 400 \u2013"
+    }
+  }
+}
