@@ -1,0 +1,33 @@
+name: HHGOA Submission Validation Check
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate-submission:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Run Official Submission Validator
+        run: |
+          python scripts/validate_submission.py
+
+      - name: Enforce Exactly 20 Case Files in cases/
+        run: |
+          COUNT=$(find cases -maxdepth 1 -name "HHG-*.json" | wc -l)
+          echo "Found $COUNT case files"
+          if [ "$COUNT" -ne 20 ]; then
+            echo "ERROR: Expected exactly 20 case files, found $COUNT"
+            exit 1
+          fi
