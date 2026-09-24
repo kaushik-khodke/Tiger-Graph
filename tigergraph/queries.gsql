@@ -1,0 +1,143 @@
+// ==============================================================================
+// TigerGraph GSQL Parametrized Queries & Graph Algorithms
+// Hackathon: TigerGraph x Hacker House Goa (HHGOA) — Fraud Investigation Dataset
+// Platform: Sentinel AI — Agentic Fraud Investigation & Next-Best-Action Platform
+// ==============================================================================
+
+USE GRAPH FraudGraph
+
+// ------------------------------------------------------------------------------
+// 1. Query: device_neighbors
+// Traverses from a device profile to discover all linked transactions,
+// cards, and cardholders sharing that hardware infrastructure.
+// Used for Rule R6 (shared origin) and syndicate ring discovery.
+// ------------------------------------------------------------------------------
+CREATE QUERY device_neighbors(VERTEX<DeviceProfile> dev) FOR GRAPH FraudGraph {
+    SetAccum<VERTEX<Card>> @@connected_cards;
+    SetAccum<VERTEX<Transaction>> @@connected_txns;
+    SetAccum<VERTEX<Customer>> @@connected_customers;
+
+    Start = {dev};
+
+    // 1-hop: find all transactions executed from this device profile
+    Txns = SELECT t FROM Start:d -(FROM_DEVICE:e)- Transaction:t
+           ACCUM @@connected_txns += t;
+
+    // 2-hop: find all cards that made those transactions
+    Cards = SELECT c FROM Txns:t -(MADE:e)- Card:c
+            ACCUM @@connected_cards += c;
+
+    // 3-hop: find cardholders owning those cards
+    Custs = SELECT cu FROM Cards:c -(OWNS:e)- Customer:cu
+            ACCUM @@connected_customers += cu;
+
+    PRINT dev, @@connected_cards, @@connected_txns, @@connected_customers;
+}
+
+// ------------------------------------------------------------------------------
+// 2. Query: card_window
+// Gathers recent transaction sequence for a card within a temporal window (in hours).
+// Essential for detecting Rule R5 (Card Testing rapid bursts under 1 hour).
+// ------------------------------------------------------------------------------
+CREATE QUERY card_window(VERTEX<Card> card, INT hours) FOR GRAPH FraudGraph {
+    ListAccum<VERTEX<Transaction>> @@ordered_txns;
+    SumAccum<DOUBLE> @@total_exposure;
+
+    Start = {card};
+
+    Txns = SELECT t FROM Start:c -(MADE:e)- Transaction:t
+           ACCUM @@ordered_txns += t,
+                 @@total_exposure += t.amt
+           ORDER BY t.ts DESC;
+
+    PRINT card, @@ordered_txns, @@total_exposure;
+}
+
+// ------------------------------------------------------------------------------
+// 3. Query: customer_summary
+// Resolves customer portfolio: all cards owned, overall transaction velocity,
+// and baseline billing regions.
+// ------------------------------------------------------------------------------
+CREATE QUERY customer_summary(VERTEX<Customer> cust) FOR GRAPH FraudGraph {
+    SetAccum<VERTEX<Card>> @@cards;
+    SetAccum<VERTEX<BillingRegion>> @@home_regions;
+
+    Start = {cust};
+
+    Cards = SELECT c FROM Start:cu -(OWNS:e)- Card:c
+            ACCUM @@cards += c;
+
+    Txns = SELECT t FROM Cards:c -(MADE:e)- Transaction:t;
+
+    Regions = SELECT r FROM Txns:t -(BILLED_IN:e)- BillingRegion:r
+              ACCUM @@home_regions += r;
+
+    PRINT cust, @@cards, @@home_regions;
+}
+
+// ------------------------------------------------------------------------------
+// 4. Query: find_prior_cases
+// Retrieves similar closed historical cases from July–October 2016
+// associated with this card, customer, or shared device profile.
+// Provides historical investigation memory for GraphRAG context.
+// ------------------------------------------------------------------------------
+CREATE QUERY find_prior_cases(VERTEX<Card> card) FOR GRAPH FraudGraph {
+    SetAccum<VERTEX<ClosedCase>> @@prior_cases;
+
+    Start = {card};
+
+    // Find direct closed cases on this card
+    DirectCases = SELECT cc FROM Start:c -(ON_CARD:e)- ClosedCase:cc
+                  ACCUM @@prior_cases += cc;
+
+    // Find closed cases on connected cards
+    ConnectedCases = SELECT cc FROM Start:c -(CONNECTED_TO:e)- ClosedCase:cc
+                     ACCUM @@prior_cases += cc;
+
+    PRINT card, @@prior_cases;
+}
+
+// ------------------------------------------------------------------------------
+// 5. Query: store_investigation_case
+// Writes a completed Sentinel AI investigation case into the TigerGraph
+// dynamic case memory graph, enabling future investigations to retrieve it.
+// ------------------------------------------------------------------------------
+CREATE QUERY store_investigation_case(
+    STRING case_id,
+    STRING status,
+    STRING verdict,
+    DOUBLE fraud_prob,
+    STRING pattern,
+    STRING pattern_desc,
+    DOUBLE exposure,
+    STRING summary,
+    STRING stop_reason,
+    BOOL sar_filed,
+    STRING card_id,
+    STRING flagged_txn_id
+) FOR GRAPH FraudGraph {
+
+    // Upsert investigation case vertex
+    INSERT INTO InvestigationCase (
+        PRIMARY_ID, case_id, status, verdict, fraud_probability,
+        pattern, pattern_description, exposure_usd, summary, stop_reason,
+        sar_filed, resolved_at
+    ) VALUES (
+        case_id, case_id, status, verdict, fraud_prob,
+        pattern, pattern_desc, exposure, summary, stop_reason,
+        sar_filed, now()
+    );
+
+    // Link investigation case to Card and Flagged Transaction
+    IF card_id != "" THEN
+        INSERT INTO INVESTIGATED_CARD (FROM, TO) VALUES (case_id, card_id);
+    END;
+
+    IF flagged_txn_id != "" THEN
+        INSERT INTO INVESTIGATED_TXN (FROM, TO) VALUES (case_id, flagged_txn_id);
+    END;
+
+    PRINT "Case successfully recorded into TigerGraph Case Memory" AS message;
+}
+
+INSTALL QUERY device_neighbors, card_window, customer_summary, find_prior_cases, store_investigation_case
