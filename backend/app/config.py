@@ -26,20 +26,35 @@ def _load_env_file(env_path: Path):
 _load_env_file(BACKEND_ROOT / ".env")
 _load_env_file(WORKSPACE_ROOT / ".env")
 
+def _resolve_data_path(filename: str, default_dir: Path) -> Path:
+    custom_dir = os.getenv("DATASET_DIR")
+    if custom_dir:
+        p = Path(custom_dir) / filename
+        if p.exists():
+            return p
+    default_path = default_dir / filename
+    if default_path.exists():
+        return default_path
+    for base in [WORKSPACE_ROOT, BACKEND_ROOT, Path.cwd(), Path.cwd().parent]:
+        candidate = base / filename
+        if candidate.exists():
+            return candidate
+    return default_path
+
 class Settings(BaseModel):
     APP_NAME: str = "Sentinel AI API"
     APP_ENV: str = os.getenv("APP_ENV", "development")
     API_HOST: str = os.getenv("API_HOST", "0.0.0.0")
-    API_PORT: int = int(os.getenv("API_PORT", "8001"))
+    API_PORT: int = int(os.getenv("PORT", os.getenv("API_PORT", "8001")))
     FRONTEND_ORIGIN: str = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
     
     # Dataset files
-    DATASET_DIR: Path = WORKSPACE_ROOT
-    CASE_PACK_CSV: Path = WORKSPACE_ROOT / "case_pack.csv"
-    CLOSED_CASES_CSV: Path = WORKSPACE_ROOT / "closed_cases_history.csv"
-    TRANSACTIONS_CSV: Path = WORKSPACE_ROOT / "transactions.csv"
-    IDENTITY_CSV: Path = WORKSPACE_ROOT / "identity.csv"
-    CASES_OUTPUT_DIR: Path = WORKSPACE_ROOT / "cases"
+    DATASET_DIR: Path = Path(os.getenv("DATASET_DIR", str(WORKSPACE_ROOT)))
+    CASE_PACK_CSV: Path = _resolve_data_path("case_pack.csv", WORKSPACE_ROOT)
+    CLOSED_CASES_CSV: Path = _resolve_data_path("closed_cases_history.csv", WORKSPACE_ROOT)
+    TRANSACTIONS_CSV: Path = _resolve_data_path("transactions.csv", WORKSPACE_ROOT)
+    IDENTITY_CSV: Path = _resolve_data_path("identity.csv", WORKSPACE_ROOT)
+    CASES_OUTPUT_DIR: Path = _resolve_data_path("cases", WORKSPACE_ROOT)
 
     # Gemini LLM Config
     GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", os.getenv("GEMINI_API_KEY", ""))
