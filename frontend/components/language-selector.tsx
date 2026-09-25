@@ -26,7 +26,7 @@ export function LanguageSelector({ currentLang, onSelectLang }: LanguageSelector
   }, [])
 
   return (
-    <div className="language-selector-wrapper notranslate" translate="no" ref={ref}>
+    <div className="language-selector-wrapper notranslate" translate="no" ref={ref} style={{ display: 'inline-block' }}>
       <button
         type="button"
         className="language-selector-btn"
@@ -34,14 +34,18 @@ export function LanguageSelector({ currentLang, onSelectLang }: LanguageSelector
         title={`Language: ${activeLang.nativeName} (${activeLang.name}). Click to change.`}
         aria-label="Select website language"
         aria-expanded={open}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', cursor: 'pointer' }}
       >
-        <Icons.Globe className="w-3.5 h-3.5" />
-        <span className="notranslate" translate="no">{activeLang.code.toUpperCase()}</span>
-        <Icons.ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <Icons.Globe style={{ width: 14, height: 14, flexShrink: 0 }} />
+        <span className="notranslate" translate="no" style={{ fontWeight: 600, fontSize: '12px', lineHeight: 1 }}>{activeLang.code.toUpperCase()}</span>
+        <Icons.ChevronDown
+          className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          style={{ width: 12, height: 12, flexShrink: 0 }}
+        />
       </button>
 
       {open && (
-        <div className="language-dropdown-menu notranslate" translate="no" role="menu">
+        <div className="language-dropdown-menu notranslate" translate="no" role="menu" style={{ zIndex: 1000 }}>
           {SUPPORTED_LANGUAGES.map((lang) => {
             const isSelected = lang.code === currentLang
             return (
