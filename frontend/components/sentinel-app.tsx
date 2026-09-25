@@ -187,8 +187,9 @@ function Header({
           onClick={onToggleTheme}
           title={`Current: ${theme === 'dark' ? 'Dark' : 'Light'} Mode. Click to switch theme.`}
           aria-label="Toggle theme"
+          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, cursor: 'pointer', flexShrink: 0 }}
         >
-          {theme === 'dark' ? icon('Sun') : icon('Moon')}
+          {theme === 'dark' ? icon('Sun', { size: 16 }) : icon('Moon', { size: 16 })}
         </button>
         <div className="system">
           <span className="pulse" />
@@ -2029,7 +2030,13 @@ function SettingsPage() {
 export default function SentinelApp() {
   const path = usePathname()
   const [collapsed, setCollapsed] = useState(false)
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sentinel_theme')
+      return saved === 'dark' ? 'dark' : 'light'
+    }
+    return 'light'
+  })
   const [search, setSearch] = useState('')
   const [cases, setCases] = useState<CaseListItem[]>([])
   const [metrics, setMetrics] = useState<CaseMetrics | null>(null)
@@ -2047,14 +2054,17 @@ export default function SentinelApp() {
   useEffect(() => {
     const saved = localStorage.getItem('sentinel_theme') as 'light' | 'dark' | null
     const initialTheme = saved === 'dark' ? 'dark' : 'light'
-    setTheme(initialTheme)
     document.documentElement.setAttribute('data-theme', initialTheme)
+    if (initialTheme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
   }, [])
 
   // Language initialization from localStorage + Google Translate
   useEffect(() => {
     const savedLang = localStorage.getItem('sentinel_lang') || 'en'
-    setLang(savedLang)
     initGoogleTranslate()
     if (savedLang !== 'en') {
       setGoogleTranslateLanguage(savedLang)
@@ -2072,6 +2082,11 @@ export default function SentinelApp() {
     setTheme(nextTheme)
     localStorage.setItem('sentinel_theme', nextTheme)
     document.documentElement.setAttribute('data-theme', nextTheme)
+    if (nextTheme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
   }
 
   // Load common data on boot
