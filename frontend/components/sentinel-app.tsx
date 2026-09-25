@@ -2030,20 +2030,30 @@ function SettingsPage() {
 export default function SentinelApp() {
   const path = usePathname()
   const [collapsed, setCollapsed] = useState(false)
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sentinel_theme')
+      return saved === 'dark' ? 'dark' : 'light'
+    }
+    return 'light'
+  })
   const [search, setSearch] = useState('')
   const [cases, setCases] = useState<CaseListItem[]>([])
   const [metrics, setMetrics] = useState<CaseMetrics | null>(null)
   const [auditEvents, setAuditEvents] = useState<AuditLogItem[]>([])
   const [systemStatus, setSystemStatus] = useState('TigerGraph · Connected')
   const [graphCaseId, setGraphCaseId] = useState('CASE-10293')
-  const [lang, setLang] = useState<string>('en')
+  const [lang, setLang] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sentinel_lang') || 'en'
+    }
+    return 'en'
+  })
 
   // Theme initialization from localStorage (defaults to light mode)
   useEffect(() => {
     const saved = localStorage.getItem('sentinel_theme') as 'light' | 'dark' | null
     const initialTheme = saved === 'dark' ? 'dark' : 'light'
-    setTheme(initialTheme)
     document.documentElement.setAttribute('data-theme', initialTheme)
     if (initialTheme === 'dark') {
       document.documentElement.classList.add('dark')
@@ -2055,9 +2065,6 @@ export default function SentinelApp() {
   // Language initialization from localStorage + Google Translate
   useEffect(() => {
     const savedLang = localStorage.getItem('sentinel_lang') || 'en'
-    if (savedLang !== 'en') {
-      setLang(savedLang)
-    }
     initGoogleTranslate()
     if (savedLang !== 'en') {
       setGoogleTranslateLanguage(savedLang)

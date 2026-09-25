@@ -56,7 +56,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
+      <body className="antialiased selection:bg-indigo-500/30 selection:text-indigo-200" suppressHydrationWarning>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
