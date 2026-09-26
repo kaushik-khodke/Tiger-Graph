@@ -2012,7 +2012,7 @@ function SettingsPage() {
           <p>FastAPI connection status: <Badge tone="green">{health?.status ? toTitleCase(health.status) : 'Online'}</Badge></p>
           <p>Environment: <strong className="notranslate" translate="no">{health?.environment ? toTitleCase(health.environment) : 'Development'} (Port {health?.port || 8001})</strong></p>
           <p>Workflow Engine: <strong>{health?.workflow || '10-Stage Decision State Machine'}</strong></p>
-          <p>API Base URL: <strong className="notranslate" translate="no">{process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001'}</strong></p>
+          <p>API Base URL: <strong className="notranslate" translate="no">{process.env.NEXT_PUBLIC_API_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://sentinel-ai-backend-d2nj.onrender.com' : 'http://localhost:8001')}</strong></p>
         </div>
 
         <div className="panel" style={{ padding: '20px' }}>

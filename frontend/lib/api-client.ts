@@ -12,7 +12,12 @@ import {
   BenchmarkSummary
 } from '@/types/sentinel'
 
-const rawBase = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001').trim()
+const defaultBaseUrl =
+  process.env.NODE_ENV === 'production'
+    ? 'https://sentinel-ai-backend-d2nj.onrender.com'
+    : 'http://localhost:8001'
+
+const rawBase = (process.env.NEXT_PUBLIC_API_BASE_URL || defaultBaseUrl).trim()
 const API_BASE_URL = rawBase.replace(/\/+$/, '')
 
 async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T> {
